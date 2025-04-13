@@ -18,6 +18,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     header {
@@ -84,11 +85,6 @@
 
     .btn:hover {
       background: #cc0000;
-    }
-
-    /* Köy Seçimi */
-    .village-select {
-      margin-top: 1rem;
     }
 
     /* Rütbe seçim alanı */
@@ -175,7 +171,7 @@
       color: #50fa7b;
     }
 
-    /* Sabit Butonlar - Rozetlerim, Market, Kumarhane */
+    /* Sabit Butonlar (sağ alt) - Rozetlerim, Market, Kumarhane */
     .fixed-btn-group {
       position: fixed;
       bottom: 2rem;
@@ -195,7 +191,34 @@
       display: none !important;
     }
 
-    /* Modal Genel */
+    /* Sol Panel (Köy) */
+    .side-panel {
+      position: fixed;
+      top: 80px;
+      left: 20px;
+      width: 80px;
+      text-align: center;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1000;
+    }
+
+    .side-panel img {
+      width: 64px;
+      height: 64px;
+      cursor: pointer;
+      border-radius: 5px;
+      border: 2px solid #333;
+    }
+
+    .side-panel p {
+      font-size: 0.9rem;
+      color: #ffcc00;
+    }
+
+    /* Köy Paneli (Envanter vs.) */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0;
@@ -322,29 +345,25 @@
       border: 1px solid #999;
     }
 
+    /* Envanter Görselleştirme */
+    .inventory-list img {
+      width: 32px;
+      height: 32px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
+
 <header>
   <div class="logo">Black Dolphine</div>
   <div class="money">Dolar: <span id="money">0</span></div>
 </header>
 
 <main>
-  <h1>Black Dolphine Mafya Dünyasına Hoş Geldiniz</h1>
-  <h4>Önce yaşadığın köyü seç, ardından rütbe kartlarından birini seçerek görevlere başla.</h4>
-
-  <!-- Köy Seçimi -->
-  <div class="village-select">
-    <label for="villageSelect"><strong>Köy Seçiniz:</strong> </label>
-    <select id="villageSelect">
-      <option value="Shuman">Shuman</option>
-      <option value="Avamur">Avamur</option>
-      <option value="Smak">Smak</option>
-      <option value="Cerdo">Cerdo</option>
-      <option value="Alizera">Alizera</option>
-    </select>
-  </div>
+  <h1>Mafya Dünyasına Hoş Geldiniz</h1>
+  <h4>Vakur veya Hatip rütbesiyle başlayın, rozet kazanın. Baron kilidi açılınca Market ve Baron görevleri de aktifleşir!</h4>
 
   <!-- Rütbe Seçim Kartları -->
   <div class="rank-selection">
@@ -372,16 +391,32 @@
     <h3 id="rankTitle"></h3>
     <div class="task-desc" id="taskDescription"></div>
     <button class="btn" id="completeTaskBtn" onclick="completeTask()">Görevi Tamamla</button>
-    <div class="timer" id="countdownTimer" style="display:none;">Bekleme süresi: <span id="timerValue">120</span>sn</div>
+    <div class="timer" id="countdownTimer" style="display:none;">Bekleme süresi: <span id="timerValue">10</span> sn</div>
   </div>
-
 </main>
+
+<!-- Sol Panel (Köy) - Başlangıçta gizli -->
+<div class="side-panel" id="koyPanelTrigger">
+  <img src="https://via.placeholder.com/64?text=Köy" alt="Köy" onclick="toggleKoyPanelModal()" />
+  <p>Köyün</p>
+</div>
 
 <!-- Sabit Butonlar (sağ alt) -->
 <div class="fixed-btn-group">
   <button class="btn" onclick="toggleBadgesModal()">Rozetlerim</button>
   <button class="btn hidden" id="marketBtn" onclick="toggleMarketModal()">Market</button>
   <button class="btn hidden" id="kumarhaneBtn" onclick="toggleKumarhaneModal()">Kumarhane</button>
+</div>
+
+<!-- KÖY Panel (Envanter) -->
+<div class="modal-overlay" id="koyModal">
+  <div class="modal">
+    <button class="close-modal" onclick="toggleKoyPanelModal()">X</button>
+    <h2>Envanter ve Çete Bilgileri</h2>
+    <div class="inventory-list" id="inventoryList"></div>
+    <hr style="margin:1rem 0; border: 1px solid #444;">
+    <h3>Çete Üye Sayısı: <span id="ceteUyeSayisi">0</span></h3>
+  </div>
 </div>
 
 <!-- Rozetlerim Modal -->
@@ -421,24 +456,24 @@
   <div class="modal">
     <button class="close-modal" onclick="toggleMarketModal()">X</button>
     <h2>Market</h2>
-    <p style="margin-bottom:1rem;">Baron seviyesinde satın alabileceğiniz eşya ve mülkler:</p>
+    <p style="margin-bottom:1rem;">Baron seviyesinde satın alabileceğiniz varlıklar:</p>
     
+    <div class="market-item" id="koyItem">
+      <div>Köy (75.000$)</div>
+      <button class="btn" onclick="buyItem('Köy', 75000)">Satın Al</button>
+    </div>
     <div class="market-item">
-      <div>At (5000$)</div>
+      <div>At (5.000$)</div>
       <button class="btn" onclick="buyItem('At', 5000)">Satın Al</button>
     </div>
     <div class="market-item">
-      <div>Uçak (4000$)</div>
+      <div>Uçak (4.000$)</div>
       <button class="btn" onclick="buyItem('Uçak', 4000)">Satın Al</button>
     </div>
     <div class="market-item">
-      <div>Kumarhane Kur (40000$)</div>
-      <button class="btn" onclick="buyItem('Kumarhane Kur', 40000)">Satın Al</button>
+      <div>Kumarhane Kur (40.000$)</div>
+      <button class="btn" onclick="buyItem('Kumarhane', 40000)">Satın Al</button>
     </div>
-    
-    <hr style="margin:1rem 0; border: 1px solid #444;">
-    <h4>Sahip Olduğunuz Eşyalar</h4>
-    <div id="inventoryList" style="min-height:40px;"></div>
   </div>
 </div>
 
@@ -518,11 +553,16 @@
   let dayaniklilik = 0;         // Vakur dayanıklılık
   let nufus = 0;                // Hatip nüfus
 
-  let isCooldown = false;       // 2 dk bekleme aktif mi?
+  let isCooldown = false;       // Bekleme aktif mi?
   let cooldownTimer = null;     // setInterval referansı
-  let timeLeft = 120;           // 2 dakika = 120s
+  let timeLeft = 10;            // 10 saniye bekleme
 
-  let inventory = [];           // Marketten alınan eşyalar
+  // Market - Envanter
+  let hasKoy = false;           // Köy satın alındı mı?
+  let atCount = 0;              // Kaç at?
+  let ucakCount = 0;            // Kaç uçak?
+  let kumarhaneCount = 0;       // Kaç kumarhane?
+  let ceteUyeSayisi = 0;        // Çete üye sayısı
 
   // HTML Elemanları
   const taskContainer = document.getElementById('taskContainer');
@@ -536,6 +576,11 @@
   const marketBtn = document.getElementById('marketBtn');
   const kumarhaneBtn = document.getElementById('kumarhaneBtn');
 
+  const koyPanelTrigger = document.getElementById('koyPanelTrigger');
+  const koyModal = document.getElementById('koyModal');
+  const inventoryList = document.getElementById('inventoryList');
+  const ceteUyeSayisiSpan = document.getElementById('ceteUyeSayisi');
+
   // -----------------------------
   // Rütbe Seçme Fonksiyonu
   // -----------------------------
@@ -545,7 +590,7 @@
       return;
     }
 
-    // Baron kilidi kontrolü (en az 2 rozet kazanmış olmak - mavi + turuncu + kırmızı)
+    // Baron kilidi kontrolü (en az 2 rozet - mavi+turuncu+kırmızı)
     const totalBadges = blueBadgeCount + orangeBadgeCount + redBadgeCount;
     if(rank === "Baron" && totalBadges < 2) {
       alert("Baron seviyesi için en az 2 rozet kazanmalısınız!");
@@ -627,7 +672,7 @@
       let cashGain = getRandomMoney(300, 800);
       money += cashGain;
 
-      // Baron kötü iş yaptıkça vakur rozeti 1 azalabilir (eğer varsa)
+      // Baron kötü iş yaptıkça Vakur rozeti 1 azalabilir (eğer varsa)
       if(blueBadgeCount > 0) {
         blueBadgeCount -= 1;
         dayaniklilik = Math.max(dayaniklilik - 1, 0);
@@ -646,7 +691,7 @@
     updateMoneyUI();
     checkBaronUnlock();
 
-    // Görev tamamlandı, 2 dk bekleme başlat
+    // Görev tamamlandı, 10 saniyelik bekleme
     startCooldown();
   }
 
@@ -665,13 +710,13 @@
   }
 
   // -----------------------------
-  // 2 Dakikalık Bekleme Süresi
+  // 10 Saniyelik Bekleme Süresi
   // -----------------------------
   function startCooldown() {
     isCooldown = true;
     completeTaskBtn.disabled = true;
     countdownTimer.style.display = "block";
-    timeLeft = 120;
+    timeLeft = 10;
     timerValue.innerText = timeLeft;
 
     cooldownTimer = setInterval(() => {
@@ -703,7 +748,7 @@
   }
 
   // -----------------------------
-  // Arayüz Güncelleme
+  // Arayüz Güncelleme (Rozet, Para, vb.)
   // -----------------------------
   function updateBadgesUI() {
     document.getElementById('blueBadgeCount').innerText = blueBadgeCount;
@@ -711,10 +756,9 @@
     document.getElementById('redBadgeCount').innerText = redBadgeCount;
     document.getElementById('nufus').innerText = nufus;
 
-    // Dayanıklılık bar = (dayaniklilik * 10) px gibi ayarlayabiliriz
+    // Dayanıklılık bar genişliği = (dayaniklilik * 10) px (örnek)
     let barWidth = dayaniklilik * 10;
-    // isterseniz bir üst sınır (örneğin 300px) belirleyebilirsiniz
-    if(barWidth > 300) barWidth = 300;
+    if(barWidth > 300) barWidth = 300; // İsterseniz bir üst sınır
     document.getElementById('dayaniklikBar').style.width = barWidth + "px";
   }
 
@@ -723,7 +767,7 @@
   }
 
   // -----------------------------
-  // Rozet Modal Aç/Kapat
+  // Rozetler Modal Aç/Kapat
   // -----------------------------
   function toggleBadgesModal() {
     const badgesModal = document.getElementById('badgesModal');
@@ -736,37 +780,108 @@
   function toggleMarketModal() {
     const marketModal = document.getElementById('marketModal');
     marketModal.classList.toggle('active');
-    updateInventoryUI();
   }
 
   // -----------------------------
   // Marketten Satın Al
   // -----------------------------
   function buyItem(itemName, price) {
-    if(money >= price) {
-      money -= price;
-      inventory.push(itemName);
-      alert(itemName + " satın alındı!");
-      updateMoneyUI();
-      updateInventoryUI();
-    } else {
+    if(money < price) {
       alert("Yeterli paranız yok!");
+      return;
     }
+
+    // Baron kilidini de kontrol edelim (market için baron olmak zorunlu)
+    const totalBadges = blueBadgeCount + orangeBadgeCount + redBadgeCount;
+    if(totalBadges < 2) {
+      alert("Satın almak için Baron seviyesine erişmelisiniz (en az 2 rozet)!");
+      return;
+    }
+
+    // Satın al
+    money -= price;
+    updateMoneyUI();
+
+    switch(itemName) {
+      case "Köy":
+        if(hasKoy) {
+          alert("Zaten bir köyünüz var!");
+          return;
+        }
+        hasKoy = true;
+        alert("Köy satın alındı!");
+        document.getElementById('koyItem').style.display = "none";
+        // Sol panelde köyü göster
+        koyPanelTrigger.style.display = "flex";
+        break;
+      case "At":
+        atCount++;
+        // Rastgele bir çete üyesi kazancı belirleyebiliriz (örnek)
+        ceteUyeSayisi += 2;
+        alert("At satın alındı (+2 çete üyesi)!");
+        break;
+      case "Uçak":
+        ucakCount++;
+        // Rastgele çete üyelik mantığı
+        ceteUyeSayisi += 5;
+        alert("Uçak satın alındı (+5 çete üyesi)!");
+        break;
+      case "Kumarhane":
+        kumarhaneCount++;
+        ceteUyeSayisi += 3; 
+        alert("Kumarhane kuruldu (+3 çete üyesi)!");
+        break;
+      default:
+        break;
+    }
+
+    updateInventoryUI();
   }
 
-  // Envanteri (inventory) göster
+  // -----------------------------
+  // Envanter ve Çete Bilgileri
+  // -----------------------------
   function updateInventoryUI() {
-    const inventoryList = document.getElementById('inventoryList');
     inventoryList.innerHTML = "";
-    if(inventory.length === 0) {
-      inventoryList.innerHTML = "<p>Hiç eşyanız yok.</p>";
-    } else {
-      inventory.forEach(item => {
-        const div = document.createElement('div');
-        div.textContent = "- " + item;
-        inventoryList.appendChild(div);
-      });
+    // Köy
+    if(hasKoy) {
+      const divKoy = document.createElement('div');
+      divKoy.innerHTML = `<img src="https://via.placeholder.com/32?text=Köy" alt="Köy" /> Köy (1 adet)`;
+      inventoryList.appendChild(divKoy);
     }
+    // At
+    if(atCount > 0) {
+      const divAt = document.createElement('div');
+      divAt.innerHTML = `<img src="https://via.placeholder.com/32?text=At" alt="At" /> At (x${atCount})`;
+      inventoryList.appendChild(divAt);
+    }
+    // Uçak
+    if(ucakCount > 0) {
+      const divUcak = document.createElement('div');
+      divUcak.innerHTML = `<img src="https://via.placeholder.com/32?text=Uçak" alt="Uçak" /> Uçak (x${ucakCount})`;
+      inventoryList.appendChild(divUcak);
+    }
+    // Kumarhane
+    if(kumarhaneCount > 0) {
+      const divKumar = document.createElement('div');
+      divKumar.innerHTML = `<img src="https://via.placeholder.com/32?text=Kumar" alt="Kumarhane" /> Kumarhane (x${kumarhaneCount})`;
+      inventoryList.appendChild(divKumar);
+    }
+
+    if(!hasKoy && atCount === 0 && ucakCount === 0 && kumarhaneCount === 0) {
+      inventoryList.innerHTML = "<p>Envanteriniz boş!</p>";
+    }
+
+    ceteUyeSayisiSpan.innerText = ceteUyeSayisi;
+  }
+
+  // -----------------------------
+  // Köy Panel Modal Aç/Kapat
+  // -----------------------------
+  function toggleKoyPanelModal() {
+    // Güncel envanter göster
+    updateInventoryUI();
+    koyModal.classList.toggle('active');
   }
 
   // -----------------------------
@@ -796,11 +911,11 @@
       return;
     }
 
-    // 50% şans kazanma
+    // %50 şans kazanma
     const chance = Math.random();
     if(chance < 0.5) {
       // Kazan
-      money += bet;  // ikiye katla = +bet, net +bet
+      money += bet;  
       gambleResult.innerText = `Kazandınız! Yeni bakiyeniz: ${money} $`;
     } else {
       // Kaybet
@@ -809,7 +924,6 @@
     }
     updateMoneyUI();
   }
-
 </script>
 </body>
 </html>
