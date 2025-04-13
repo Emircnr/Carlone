@@ -373,7 +373,7 @@
     .slot-row {
       display: flex;
       justify-content: center;
-      margin: 1rem 0;
+      margin: 1.5rem 0;
     }
 
     .reel {
@@ -413,7 +413,7 @@
 
     @keyframes spin {
       0%   { transform: translateY(0); }
-      100% { transform: translateY(-90%); } 
+      100% { transform: translateY(-90%); }
     }
 
     /* Bahis ve Düğme Alanı */
@@ -439,6 +439,30 @@
       font-size: 1.1rem;
       font-weight: bold;
       min-height: 24px;
+    }
+
+    /* Reel Highlight (kazandıysa) */
+    .highlight {
+      animation: highlightGlow 1.5s ease-in-out 0s 2 alternate;
+    }
+    @keyframes highlightGlow {
+      0% { box-shadow: 0 0 10px 1px #0f0; }
+      100% { box-shadow: 0 0 20px 5px #0f0; }
+    }
+
+    /* Slot Scoreboard */
+    .slot-scoreboard {
+      margin-top: 1rem;
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .slot-scoreboard div {
+      background: #333;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      border: 1px solid #444;
     }
 
     /* ENVANTER GÖRSELLEŞTİRME */
@@ -618,9 +642,7 @@
       <div class="slot-row">
         <!-- 3 reel -->
         <div class="reel" id="reel1">
-          <div class="reel-strip" id="reelStrip1">
-            <!-- Bu kısımda animasyon sırasında random semboller dönecek -->
-          </div>
+          <div class="reel-strip" id="reelStrip1"></div>
         </div>
         <div class="reel" id="reel2">
           <div class="reel-strip" id="reelStrip2"></div>
@@ -635,6 +657,13 @@
         <button class="btn" onclick="spinSlots()">Döndür</button>
       </div>
       <div class="slot-result" id="slotResult"></div>
+
+      <!-- Slot Scoreboard (Kazanç/Kayıp) -->
+      <div class="slot-scoreboard">
+        <div>Toplam Kazanç: <span id="totalWins">0</span>$</div>
+        <div>Toplam Kayıp: <span id="totalLosses">0</span>$</div>
+        <div>Net: <span id="netProfit">0</span>$</div>
+      </div>
     </div>
   </div>
 </div>
@@ -713,6 +742,16 @@
   let kumarhaneCount = 0;            // Kaç kumarhane?
   let ceteUyeSayisi = 0;             // Çete üye sayısı
 
+  // Slot Machine
+  const reelStrip1 = document.getElementById('reelStrip1');
+  const reelStrip2 = document.getElementById('reelStrip2');
+  const reelStrip3 = document.getElementById('reelStrip3');
+  const slotResult = document.getElementById('slotResult');
+  const slotSymbols = ["🍒","🍋","🍊","💎","🍀","7️⃣","🔔","⭐","🍇"];
+
+  let totalWins = 0;
+  let totalLosses = 0;
+
   // HTML Elemanları
   const taskContainer = document.getElementById('taskContainer');
   const rankTitle = document.getElementById('rankTitle');
@@ -729,13 +768,6 @@
   const koyModal = document.getElementById('koyModal');
   const inventoryList = document.getElementById('inventoryList');
   const ceteUyeSayisiSpan = document.getElementById('ceteUyeSayisi');
-
-  // Slot Machine Elemanları
-  const reelStrip1 = document.getElementById('reelStrip1');
-  const reelStrip2 = document.getElementById('reelStrip2');
-  const reelStrip3 = document.getElementById('reelStrip3');
-  const slotResult = document.getElementById('slotResult');
-  const slotSymbols = ["🍒","🍋","🍊","💎","🍀","7️⃣","🔔","⭐","🍇"];
 
   // -----------------------------
   // RÜTBE SEÇİMİ
@@ -1051,6 +1083,10 @@
     reelStrip1.innerHTML = "";
     reelStrip2.innerHTML = "";
     reelStrip3.innerHTML = "";
+    // Makaraları normal stiline döndür
+    document.getElementById('reel1').classList.remove('highlight');
+    document.getElementById('reel2').classList.remove('highlight');
+    document.getElementById('reel3').classList.remove('highlight');
   }
 
   function spinSlots() {
@@ -1058,7 +1094,7 @@
     const bet = parseInt(betInput.value);
 
     if(isNaN(bet) || bet <= 0) {
-      slotResult.innerText = "Geçerli bir bahis girin.";
+      slotResult.innerText = "Geçerli bir bahis giriniz.";
       return;
     }
     if(bet > money) {
@@ -1070,37 +1106,43 @@
     money -= bet;
     updateMoneyUI();
 
+    // Reelleri sıfırla (her yeni spinde)
+    resetReels();
+
     // Her reel için 8-10 tane rastgele sembol oluşturarak ekranda dönüyor gibi yapalım.
     createReelSymbols(reelStrip1);
     createReelSymbols(reelStrip2);
     createReelSymbols(reelStrip3);
 
     // Reellere animasyon ekle
-    reelStrip1.style.animation = "spin 1.1s ease-in-out forwards";
-    reelStrip2.style.animation = "spin 1.5s ease-in-out forwards";
-    reelStrip3.style.animation = "spin 1.9s ease-in-out forwards";
+    reelStrip1.style.animation = "spin 1.2s ease-in-out forwards";
+    reelStrip2.style.animation = "spin 1.6s ease-in-out forwards";
+    reelStrip3.style.animation = "spin 2.0s ease-in-out forwards";
 
-    // Makaralar durunca sonuç hesapla (timeout'larla)
+    // Geçici değişkenler (sembol tutmak için)
+    let symbol1, symbol2, symbol3;
+
+    // Makaralar durunca sonucu belirlemek için setTimeout
     setTimeout(() => {
-      const symbol1 = getRandomSymbol();
+      symbol1 = getRandomSymbol();
       reelStrip1.innerHTML = `<div class="reel-symbol">${symbol1}</div>`;
-    }, 1100);
+    }, 1200);
 
     setTimeout(() => {
-      const symbol2 = getRandomSymbol();
+      symbol2 = getRandomSymbol();
       reelStrip2.innerHTML = `<div class="reel-symbol">${symbol2}</div>`;
-    }, 1500);
+    }, 1600);
 
     setTimeout(() => {
-      const symbol3 = getRandomSymbol();
+      symbol3 = getRandomSymbol();
       reelStrip3.innerHTML = `<div class="reel-symbol">${symbol3}</div>`;
       // Tüm makaralar durduktan sonra sonucu değerlendir
       evaluateSpin([symbol1, symbol2, symbol3], bet);
-    }, 1900);
+    }, 2000);
   }
 
   function createReelSymbols(reelStrip) {
-    // Reel şeridine 8-10 rasgele sembol ekleyerek "dönme" efekti için
+    // Reel şeridine 8-10 rasgele sembol ekleyerek "dönme" efekti
     reelStrip.innerHTML = "";
     for(let i=0; i<8; i++) {
       const randomSym = getRandomSymbol();
@@ -1117,28 +1159,52 @@
 
   function evaluateSpin(symbols, bet) {
     // 3 sembol array'i: [s1, s2, s3]
-    const s1 = symbols[0];
-    const s2 = symbols[1];
-    const s3 = symbols[2];
-
+    const [s1, s2, s3] = symbols;
     let win = 0;
+
     // 3'lü eşleşme => 5x kazanç
     if(s1 === s2 && s2 === s3) {
       win = bet * 5;
+      // Tüm makaraları highlight
+      document.getElementById('reel1').classList.add('highlight');
+      document.getElementById('reel2').classList.add('highlight');
+      document.getElementById('reel3').classList.add('highlight');
     }
     // En az 2 sembol eşleşiyorsa => 2x kazanç
     else if(s1 === s2 || s2 === s3 || s1 === s3) {
       win = bet * 2;
+      // Eşleşen makaraları highlight
+      if(s1 === s2) {
+        document.getElementById('reel1').classList.add('highlight');
+        document.getElementById('reel2').classList.add('highlight');
+      }
+      if(s2 === s3) {
+        document.getElementById('reel2').classList.add('highlight');
+        document.getElementById('reel3').classList.add('highlight');
+      }
+      if(s1 === s3) {
+        document.getElementById('reel1').classList.add('highlight');
+        document.getElementById('reel3').classList.add('highlight');
+      }
     }
 
     if(win > 0) {
       money += win;
       slotResult.innerText = `Tebrikler! Kazandınız: $${win}`;
+      totalWins += win;
     } else {
       slotResult.innerText = "Kaybettiniz!";
+      totalLosses += bet;
     }
 
     updateMoneyUI();
+    updateScoreboard();
+  }
+
+  function updateScoreboard() {
+    document.getElementById('totalWins').innerText = totalWins;
+    document.getElementById('totalLosses').innerText = totalLosses;
+    document.getElementById('netProfit').innerText = (totalWins - totalLosses);
   }
 </script>
 </body>
