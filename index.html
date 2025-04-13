@@ -207,13 +207,17 @@
       transition: all 0.3s ease;
     }
 
-    .side-panel img {
-      width: 64px;
-      height: 64px;
+    /* Köy ikonu için emoji ve animasyon */
+    .village-icon {
+      font-size: 2.5rem;
       cursor: pointer;
       border-radius: 5px;
       border: 2px solid #333;
       animation: wiggle 3s infinite ease-in-out;
+      display: inline-block;
+      line-height: 1;
+      padding: 0.3rem;
+      background-color: rgba(0, 0, 0, 0.3);
     }
 
     @keyframes wiggle {
@@ -249,7 +253,7 @@
       background: #1c1c1c;
       border-radius: 10px;
       padding: 2rem;
-      max-width: 500px;
+      max-width: 600px;
       width: 90%;
       text-align: center;
       box-shadow: 0 5px 15px rgba(0,0,0,0.8);
@@ -359,29 +363,98 @@
       padding: 0.3rem 0.8rem;
     }
 
-    /* KUMARHANE MODAL */
+    /* KUMARHANE (Slot Machine) MODAL */
+    .slot-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .slot-row {
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0;
+    }
+
+    .reel {
+      width: 70px;
+      height: 70px;
+      background: #333;
+      border: 3px solid #777;
+      border-radius: 10px;
+      margin: 0 10px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    /* Animasyon için içerideki sembolleri barındıran kapsayıcı */
+    .reel-strip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 1000%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-evenly;
+      animation: none; /* Varsayılan kapalı */
+    }
+
+    .reel-symbol {
+      font-size: 2.2rem;
+      text-shadow: 0 0 5px rgba(255,255,255,0.5);
+    }
+
+    @keyframes spin {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(-90%); } 
+    }
+
+    /* Bahis ve Düğme Alanı */
     .kumarhane-input {
       margin: 1rem 0;
       display: flex;
       gap: 0.5rem;
       justify-content: center;
+      align-items: center;
     }
 
     .kumarhane-input input {
-      width: 100px;
-      padding: 0.3rem;
+      width: 120px;
+      padding: 0.5rem;
       text-align: center;
       border-radius: 5px;
       border: 1px solid #999;
+      font-size: 1rem;
+    }
+
+    .slot-result {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      min-height: 24px;
     }
 
     /* ENVANTER GÖRSELLEŞTİRME */
-    .inventory-list img {
-      width: 32px;
-      height: 32px;
+    .inventory-list > div {
+      margin: 0.5rem 0;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Envanterdeki simgelerin bounce animasyonu */
+    .item-icon {
       margin-right: 8px;
-      vertical-align: middle;
       animation: bounce 2s infinite;
+      display: inline-block;
     }
 
     @keyframes bounce {
@@ -435,7 +508,8 @@
 
 <!-- KÖY PANELİ (sol tarafta, başlangıçta gizli) -->
 <div class="side-panel" id="koyPanelTrigger">
-  <img src="https://via.placeholder.com/64?text=K%C3%B6y" alt="Köy" onclick="toggleKoyPanelModal()" />
+  <!-- Köy Emojisi -->
+  <div class="village-icon" onclick="toggleKoyPanelModal()">🏠</div>
   <p>Köyün</p>
 </div>
 
@@ -534,17 +608,34 @@
   </div>
 </div>
 
-<!-- KUMARHANE MODALI -->
+<!-- KUMARHANE MODALI (Slot Machine) -->
 <div class="modal-overlay" id="kumarhaneModal">
   <div class="modal">
     <button class="close-modal" onclick="toggleKumarhaneModal()">X</button>
-    <h2>Kumarhane</h2>
-    <p>Şansınızı deneyin! %50 kazanma şansı.</p>
-    <div class="kumarhane-input">
-      <input type="number" id="betAmount" placeholder="Bahis ($)" />
-      <button class="btn" onclick="playGamble()">Oyna</button>
+    <h2>Kumarhane - Slot Makinesi</h2>
+
+    <div class="slot-container">
+      <div class="slot-row">
+        <!-- 3 reel -->
+        <div class="reel" id="reel1">
+          <div class="reel-strip" id="reelStrip1">
+            <!-- Bu kısımda animasyon sırasında random semboller dönecek -->
+          </div>
+        </div>
+        <div class="reel" id="reel2">
+          <div class="reel-strip" id="reelStrip2"></div>
+        </div>
+        <div class="reel" id="reel3">
+          <div class="reel-strip" id="reelStrip3"></div>
+        </div>
+      </div>
+
+      <div class="kumarhane-input">
+        <input type="number" id="betAmount" placeholder="Bahis ($)" />
+        <button class="btn" onclick="spinSlots()">Döndür</button>
+      </div>
+      <div class="slot-result" id="slotResult"></div>
     </div>
-    <p id="gambleResult"></p>
   </div>
 </div>
 
@@ -639,6 +730,13 @@
   const inventoryList = document.getElementById('inventoryList');
   const ceteUyeSayisiSpan = document.getElementById('ceteUyeSayisi');
 
+  // Slot Machine Elemanları
+  const reelStrip1 = document.getElementById('reelStrip1');
+  const reelStrip2 = document.getElementById('reelStrip2');
+  const reelStrip3 = document.getElementById('reelStrip3');
+  const slotResult = document.getElementById('slotResult');
+  const slotSymbols = ["🍒","🍋","🍊","💎","🍀","7️⃣","🔔","⭐","🍇"];
+
   // -----------------------------
   // RÜTBE SEÇİMİ
   // -----------------------------
@@ -701,10 +799,12 @@
   // -----------------------------
   function completeTask() {
     if(currentRank === "Vakur" && vakurTasks[vakurIndex]) {
+      // Rastgele 1-3 rozet
       const rozetKazanc = getRandomRozet();
       blueBadgeCount += rozetKazanc;
       dayaniklilik += rozetKazanc;
       alert(`Görevi tamamladınız! +${rozetKazanc} Mavi Rozet (Vakur)`);
+
       vakurIndex++;
     }
     else if(currentRank === "Hatip" && hatipTasks[hatipIndex]) {
@@ -713,6 +813,7 @@
       nufus += rozetKazanc;
       onur += rozetKazanc;
       alert(`Görevi tamamladınız! +${rozetKazanc} Turuncu Rozet (Hatip) \n+${rozetKazanc} Onur`);
+
       hatipIndex++;
     }
     else if(currentRank === "Baron" && baronTasks[baronIndex]) {
@@ -730,6 +831,7 @@
       } else {
         alert(`Görevi tamamladınız! +${rozetKazanc} Kırmızı Rozet (Baron), +${cashGain} $`);
       }
+
       baronIndex++;
     }
     else {
@@ -867,7 +969,7 @@
         hasKoy = true;
         alert("Köy satın alındı!");
         document.getElementById('koyItem').style.display = "none";
-        koyPanelTrigger.style.display = "flex"; // Sol panelde köy resmi göster
+        koyPanelTrigger.style.display = "flex"; // Sol panelde köy ikonu göster
         break;
       case "At":
         atCount++;
@@ -896,22 +998,22 @@
     inventoryList.innerHTML = "";
     if(hasKoy) {
       const divKoy = document.createElement('div');
-      divKoy.innerHTML = `<img src="https://via.placeholder.com/32?text=K%C3%B6y" alt="Köy" /> Köy (1 adet)`;
+      divKoy.innerHTML = `<span class="item-icon">🏠</span> Köy (1 adet)`;
       inventoryList.appendChild(divKoy);
     }
     if(atCount > 0) {
       const divAt = document.createElement('div');
-      divAt.innerHTML = `<img src="https://via.placeholder.com/32?text=%F0%9F%90%8E" alt="At" /> At (x${atCount})`;
+      divAt.innerHTML = `<span class="item-icon">🐎</span> At (x${atCount})`;
       inventoryList.appendChild(divAt);
     }
     if(ucakCount > 0) {
       const divUcak = document.createElement('div');
-      divUcak.innerHTML = `<img src="https://via.placeholder.com/32?text=%E2%9C%88%EF%B8%8F" alt="Uçak" /> Uçak (x${ucakCount})`;
+      divUcak.innerHTML = `<span class="item-icon">✈️</span> Uçak (x${ucakCount})`;
       inventoryList.appendChild(divUcak);
     }
     if(kumarhaneCount > 0) {
       const divKumar = document.createElement('div');
-      divKumar.innerHTML = `<img src="https://via.placeholder.com/32?text=%24" alt="Kumarhane" /> Kumarhane (x${kumarhaneCount})`;
+      divKumar.innerHTML = `<span class="item-icon">🎰</span> Kumarhane (x${kumarhaneCount})`;
       inventoryList.appendChild(divKumar);
     }
 
@@ -936,38 +1038,106 @@
   function toggleKumarhaneModal() {
     const kumarhaneModal = document.getElementById('kumarhaneModal');
     kumarhaneModal.classList.toggle('active');
-    document.getElementById('gambleResult').innerText = "";
+    slotResult.innerText = "";
     document.getElementById('betAmount').value = "";
+    resetReels();
   }
 
   // -----------------------------
-  // KUMARHANE OYUN FONKSİYONU
+  // SLOT MAKİNESİ FONKSİYONLARI
   // -----------------------------
-  function playGamble() {
+  function resetReels() {
+    // Makaraları sıfırlar (varsayılan sembol vs.)
+    reelStrip1.innerHTML = "";
+    reelStrip2.innerHTML = "";
+    reelStrip3.innerHTML = "";
+  }
+
+  function spinSlots() {
     const betInput = document.getElementById('betAmount');
-    const gambleResult = document.getElementById('gambleResult');
     const bet = parseInt(betInput.value);
 
     if(isNaN(bet) || bet <= 0) {
-      gambleResult.innerText = "Geçerli bir bahis miktarı giriniz.";
+      slotResult.innerText = "Geçerli bir bahis girin.";
       return;
     }
     if(bet > money) {
-      gambleResult.innerText = "Yeterli bakiyeniz yok!";
+      slotResult.innerText = "Yeterli bakiyeniz yok!";
       return;
     }
 
-    // %50 kazanma şansı
-    const chance = Math.random();
-    if(chance < 0.5) {
-      // Kazandı
-      money += bet;
-      gambleResult.innerText = `Kazandınız! Yeni bakiye: ${money} $`;
-    } else {
-      // Kaybetti
-      money -= bet;
-      gambleResult.innerText = `Kaybettiniz! Yeni bakiye: ${money} $`;
+    // Bahsi çek
+    money -= bet;
+    updateMoneyUI();
+
+    // Her reel için 8-10 tane rastgele sembol oluşturarak ekranda dönüyor gibi yapalım.
+    createReelSymbols(reelStrip1);
+    createReelSymbols(reelStrip2);
+    createReelSymbols(reelStrip3);
+
+    // Reellere animasyon ekle
+    reelStrip1.style.animation = "spin 1.1s ease-in-out forwards";
+    reelStrip2.style.animation = "spin 1.5s ease-in-out forwards";
+    reelStrip3.style.animation = "spin 1.9s ease-in-out forwards";
+
+    // Makaralar durunca sonuç hesapla (timeout'larla)
+    setTimeout(() => {
+      const symbol1 = getRandomSymbol();
+      reelStrip1.innerHTML = `<div class="reel-symbol">${symbol1}</div>`;
+    }, 1100);
+
+    setTimeout(() => {
+      const symbol2 = getRandomSymbol();
+      reelStrip2.innerHTML = `<div class="reel-symbol">${symbol2}</div>`;
+    }, 1500);
+
+    setTimeout(() => {
+      const symbol3 = getRandomSymbol();
+      reelStrip3.innerHTML = `<div class="reel-symbol">${symbol3}</div>`;
+      // Tüm makaralar durduktan sonra sonucu değerlendir
+      evaluateSpin([symbol1, symbol2, symbol3], bet);
+    }, 1900);
+  }
+
+  function createReelSymbols(reelStrip) {
+    // Reel şeridine 8-10 rasgele sembol ekleyerek "dönme" efekti için
+    reelStrip.innerHTML = "";
+    for(let i=0; i<8; i++) {
+      const randomSym = getRandomSymbol();
+      const divSym = document.createElement('div');
+      divSym.className = "reel-symbol";
+      divSym.innerText = randomSym;
+      reelStrip.appendChild(divSym);
     }
+  }
+
+  function getRandomSymbol() {
+    return slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+  }
+
+  function evaluateSpin(symbols, bet) {
+    // 3 sembol array'i: [s1, s2, s3]
+    const s1 = symbols[0];
+    const s2 = symbols[1];
+    const s3 = symbols[2];
+
+    let win = 0;
+    // 3'lü eşleşme => 5x kazanç
+    if(s1 === s2 && s2 === s3) {
+      win = bet * 5;
+    }
+    // En az 2 sembol eşleşiyorsa => 2x kazanç
+    else if(s1 === s2 || s2 === s3 || s1 === s3) {
+      win = bet * 2;
+    }
+
+    if(win > 0) {
+      money += win;
+      slotResult.innerText = `Tebrikler! Kazandınız: $${win}`;
+    } else {
+      slotResult.innerText = "Kaybettiniz!";
+    }
+
     updateMoneyUI();
   }
 </script>
