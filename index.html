@@ -342,9 +342,9 @@
     .onur-bar {
       background: #ffa500;
     }
-    .nufus-value {
-      color: #fff;
-      font-weight: bold;
+    /* Nüfus Bar => yeşil ton */
+    .nufus-bar {
+      background: #3ee63e;
     }
 
     /* MARKET MODAL */
@@ -439,6 +439,7 @@
       font-size: 1.1rem;
       font-weight: bold;
       min-height: 24px;
+      height: 30px;
     }
 
     /* Reel Highlight (kazandıysa) */
@@ -450,19 +451,35 @@
       100% { box-shadow: 0 0 20px 5px #0f0; }
     }
 
-    /* Slot Scoreboard */
-    .slot-scoreboard {
-      margin-top: 1rem;
-      display: flex;
-      gap: 2rem;
-      justify-content: center;
-      font-size: 1rem;
+    /* FLOATING MESSAGES (Kazanç / Kayıp) */
+    .floating-messages {
+      position: fixed;
+      top: 0; 
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 3000;
     }
-    .slot-scoreboard div {
-      background: #333;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      border: 1px solid #444;
+    .float-msg {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.5rem;
+      font-weight: bold;
+      animation: floatUp 2s ease forwards;
+      opacity: 0;
+    }
+    @keyframes floatUp {
+      0% {
+        bottom: 20%;
+        opacity: 1;
+      }
+      100% {
+        bottom: 60%;
+        opacity: 0;
+      }
     }
 
     /* ENVANTER GÖRSELLEŞTİRME */
@@ -490,6 +507,9 @@
   </style>
 </head>
 <body>
+
+<!-- FLOATING MESSAGES KATMANI -->
+<div class="floating-messages" id="floatingMessages"></div>
 
 <header>
   <div class="logo">Black Dolphine</div>
@@ -598,10 +618,13 @@
       <div class="bar-value">Onur: <span id="onurValue">0</span></div>
     </div>
 
-    <!-- Nüfus Sayısı -->
+    <!-- Nüfus Bar -->
     <div class="bar-section">
       <div class="bar-title">Nüfus (Hatip)</div>
-      <div class="bar-value">Nüfus: <span id="nufus">0</span></div>
+      <div class="bar-container">
+        <div class="bar-fill nufus-bar" id="nufusBar"></div>
+      </div>
+      <div class="bar-value">Nüfus: <span id="nufusValue">0</span></div>
     </div>
   </div>
 </div>
@@ -657,21 +680,14 @@
         <button class="btn" onclick="spinSlots()">Döndür</button>
       </div>
       <div class="slot-result" id="slotResult"></div>
-
-      <!-- Slot Scoreboard (Kazanç/Kayıp) -->
-      <div class="slot-scoreboard">
-        <div>Toplam Kazanç: <span id="totalWins">0</span>$</div>
-        <div>Toplam Kayıp: <span id="totalLosses">0</span>$</div>
-        <div>Net: <span id="netProfit">0</span>$</div>
-      </div>
     </div>
   </div>
 </div>
 
 <script>
-  // -----------------------------
+  // -------------------------------------------------------
   // GÖREV LİSTELERİ
-  // -----------------------------
+  // -------------------------------------------------------
   // Vakur Görevleri (10 adet)
   const vakurTasks = [
     "Aileye yardım et",
@@ -714,9 +730,9 @@
     "Büyük komplo planla ve yürüt"
   ];
 
-  // -----------------------------
+  // -------------------------------------------------------
   // DEĞİŞKENLER
-  // -----------------------------
+  // -------------------------------------------------------
   let currentRank = null;            // "Vakur", "Hatip", "Baron"
   let vakurIndex = 0;                // vakurTasks index
   let hatipIndex = 0;                // hatipTasks index
@@ -742,15 +758,14 @@
   let kumarhaneCount = 0;            // Kaç kumarhane?
   let ceteUyeSayisi = 0;             // Çete üye sayısı
 
-  // Slot Machine
+  // Slot Machine - 4 sembol
+  // 🍀 (en yüksek), 🍇, 🍋, 🍒 (en düşük)
+  // Her sembolün 2'li ve 3'lü eşleşme için farklı çarpanı olacak.
+  const slotSymbols = ["🍀","🍇","🍋","🍒"];
   const reelStrip1 = document.getElementById('reelStrip1');
   const reelStrip2 = document.getElementById('reelStrip2');
   const reelStrip3 = document.getElementById('reelStrip3');
   const slotResult = document.getElementById('slotResult');
-  const slotSymbols = ["🍒","🍋","🍊","💎","🍀","7️⃣","🔔","⭐","🍇"];
-
-  let totalWins = 0;
-  let totalLosses = 0;
 
   // HTML Elemanları
   const taskContainer = document.getElementById('taskContainer');
@@ -759,19 +774,19 @@
   const completeTaskBtn = document.getElementById('completeTaskBtn');
   const countdownTimer = document.getElementById('countdownTimer');
   const timerValue = document.getElementById('timerValue');
-
   const cardBaron = document.getElementById('cardBaron');
   const marketBtn = document.getElementById('marketBtn');
   const kumarhaneBtn = document.getElementById('kumarhaneBtn');
-
   const koyPanelTrigger = document.getElementById('koyPanelTrigger');
   const koyModal = document.getElementById('koyModal');
   const inventoryList = document.getElementById('inventoryList');
   const ceteUyeSayisiSpan = document.getElementById('ceteUyeSayisi');
 
-  // -----------------------------
+  const floatingMessages = document.getElementById('floatingMessages');
+
+  // -------------------------------------------------------
   // RÜTBE SEÇİMİ
-  // -----------------------------
+  // -------------------------------------------------------
   function selectRank(rank) {
     if(isCooldown) {
       alert("Yeni görevi seçebilmek için bekleme süresinin dolmasını bekleyin!");
@@ -789,9 +804,9 @@
     showNextTask();
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // BİR SONRAKİ GÖREVİ GÖSTER
-  // -----------------------------
+  // -------------------------------------------------------
   function showNextTask() {
     taskContainer.classList.add('active');
     countdownTimer.style.display = "none";
@@ -826,9 +841,9 @@
     }
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // GÖREV TAMAMLA
-  // -----------------------------
+  // -------------------------------------------------------
   function completeTask() {
     if(currentRank === "Vakur" && vakurTasks[vakurIndex]) {
       // Rastgele 1-3 rozet
@@ -880,19 +895,20 @@
     startCooldown();
   }
 
-  // Rastgele 1-3 rozet kazancı
+  // -------------------------------------------------------
+  // RASTGELE ROZET VE PARA FONKSİYONLARI
+  // -------------------------------------------------------
   function getRandomRozet() {
     return Math.floor(Math.random() * 3) + 1; // 1, 2 veya 3
   }
 
-  // Rastgele para
   function getRandomMoney(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // 10 SN BEKLEME SÜRESİ
-  // -----------------------------
+  // -------------------------------------------------------
   function startCooldown() {
     isCooldown = true;
     completeTaskBtn.disabled = true;
@@ -914,9 +930,9 @@
     }, 1000);
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // BARON KİLİT KONTROL
-  // -----------------------------
+  // -------------------------------------------------------
   function checkBaronUnlock() {
     const totalBadges = blueBadgeCount + orangeBadgeCount + redBadgeCount;
     if(totalBadges >= 2) {
@@ -928,9 +944,9 @@
     }
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // ARAYÜZ GÜNCELLEME
-  // -----------------------------
+  // -------------------------------------------------------
   function updateBadgesUI() {
     document.getElementById('blueBadgeCount').innerText = blueBadgeCount;
     document.getElementById('orangeBadgeCount').innerText = orangeBadgeCount;
@@ -938,43 +954,43 @@
 
     // Dayanıklılık Bar
     document.getElementById('dayaniklikValue').innerText = dayaniklilik;
-    let dBarWidth = dayaniklilik * 10;
-    if(dBarWidth > 300) dBarWidth = 300;
+    const dBarWidth = Math.min(dayaniklilik * 10, 300);
     document.getElementById('dayaniklikBar').style.width = dBarWidth + "px";
 
     // Onur Bar
     document.getElementById('onurValue').innerText = onur;
-    let oBarWidth = onur * 10;
-    if(oBarWidth > 300) oBarWidth = 300;
+    const oBarWidth = Math.min(onur * 10, 300);
     document.getElementById('onurBar').style.width = oBarWidth + "px";
 
-    // Nüfus
-    document.getElementById('nufus').innerText = nufus;
+    // Nüfus Bar
+    document.getElementById('nufusValue').innerText = nufus;
+    const nBarWidth = Math.min(nufus * 10, 300);
+    document.getElementById('nufusBar').style.width = nBarWidth + "px";
   }
 
   function updateMoneyUI() {
     document.getElementById('money').innerText = money;
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // ROZETLER MODAL AÇ/KAPAT
-  // -----------------------------
+  // -------------------------------------------------------
   function toggleBadgesModal() {
     const badgesModal = document.getElementById('badgesModal');
     badgesModal.classList.toggle('active');
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // MARKET MODAL AÇ/KAPAT
-  // -----------------------------
+  // -------------------------------------------------------
   function toggleMarketModal() {
     const marketModal = document.getElementById('marketModal');
     marketModal.classList.toggle('active');
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // MARKET SATIN AL
-  // -----------------------------
+  // -------------------------------------------------------
   function buyItem(itemName, price) {
     if(money < price) {
       alert("Yeterli paranız yok!");
@@ -1056,17 +1072,17 @@
     ceteUyeSayisiSpan.innerText = ceteUyeSayisi;
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // KÖY PANEL AÇ/KAPAT
-  // -----------------------------
+  // -------------------------------------------------------
   function toggleKoyPanelModal() {
     updateInventoryUI();
     koyModal.classList.toggle('active');
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
   // KUMARHANE MODAL AÇ/KAPAT
-  // -----------------------------
+  // -------------------------------------------------------
   function toggleKumarhaneModal() {
     const kumarhaneModal = document.getElementById('kumarhaneModal');
     kumarhaneModal.classList.toggle('active');
@@ -1075,15 +1091,33 @@
     resetReels();
   }
 
-  // -----------------------------
+  // -------------------------------------------------------
+  // FLOATING MESSAGES (Kazanç / Kayıp Animasyonu)
+  // -------------------------------------------------------
+  function createFloatingMessage(text, isWin = true) {
+    const msg = document.createElement('div');
+    msg.classList.add('float-msg');
+    msg.style.color = isWin ? '#0f0' : '#f00';  // Yeşil veya kırmızı
+    msg.innerText = text;
+
+    floatingMessages.appendChild(msg);
+
+    // 2 saniye sonunda DOM'dan sil
+    setTimeout(() => {
+      if(floatingMessages.contains(msg)) {
+        floatingMessages.removeChild(msg);
+      }
+    }, 2000);
+  }
+
+  // -------------------------------------------------------
   // SLOT MAKİNESİ FONKSİYONLARI
-  // -----------------------------
+  // -------------------------------------------------------
   function resetReels() {
     // Makaraları sıfırlar (varsayılan sembol vs.)
     reelStrip1.innerHTML = "";
     reelStrip2.innerHTML = "";
     reelStrip3.innerHTML = "";
-    // Makaraları normal stiline döndür
     document.getElementById('reel1').classList.remove('highlight');
     document.getElementById('reel2').classList.remove('highlight');
     document.getElementById('reel3').classList.remove('highlight');
@@ -1102,14 +1136,14 @@
       return;
     }
 
-    // Bahsi çek
+    // Bahsi çek (kayıp)
     money -= bet;
     updateMoneyUI();
+    createFloatingMessage(`-${bet} USD`, false);
 
-    // Reelleri sıfırla (her yeni spinde)
     resetReels();
 
-    // Her reel için 8-10 tane rastgele sembol oluşturarak ekranda dönüyor gibi yapalım.
+    // Her reel için 6-8 tane rastgele sembol ekleyerek ekranda dönüyor gibi yapalım.
     createReelSymbols(reelStrip1);
     createReelSymbols(reelStrip2);
     createReelSymbols(reelStrip3);
@@ -1119,10 +1153,8 @@
     reelStrip2.style.animation = "spin 1.6s ease-in-out forwards";
     reelStrip3.style.animation = "spin 2.0s ease-in-out forwards";
 
-    // Geçici değişkenler (sembol tutmak için)
     let symbol1, symbol2, symbol3;
 
-    // Makaralar durunca sonucu belirlemek için setTimeout
     setTimeout(() => {
       symbol1 = getRandomSymbol();
       reelStrip1.innerHTML = `<div class="reel-symbol">${symbol1}</div>`;
@@ -1142,9 +1174,10 @@
   }
 
   function createReelSymbols(reelStrip) {
-    // Reel şeridine 8-10 rasgele sembol ekleyerek "dönme" efekti
+    // Reel şeridine 6-8 rastgele sembol ekleyerek "dönme" efekti
     reelStrip.innerHTML = "";
-    for(let i=0; i<8; i++) {
+    const length = Math.floor(Math.random() * 3) + 6; // 6-8
+    for(let i = 0; i < length; i++) {
       const randomSym = getRandomSymbol();
       const divSym = document.createElement('div');
       divSym.className = "reel-symbol";
@@ -1157,54 +1190,80 @@
     return slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
   }
 
+  // -------------------------------------------------------
+  // Sembol Payout Mantığı
+  // -------------------------------------------------------
+  // 🍀 (clover)  : 3'lü => x15, 2'li => x3
+  // 🍇 (grapes)  : 3'lü => x10, 2'li => x2.5
+  // 🍋 (lemon)   : 3'lü => x7 , 2'li => x2
+  // 🍒 (cherry)  : 3'lü => x5 , 2'li => x1.5
+
+  function getPayoutMultiplier(symbol, count) {
+    switch(symbol) {
+      case "🍀": // CLOVER
+        if(count === 3) return 15;
+        if(count === 2) return 3;
+        break;
+      case "🍇": // GRAPES
+        if(count === 3) return 10;
+        if(count === 2) return 2.5;
+        break;
+      case "🍋": // LEMON
+        if(count === 3) return 7;
+        if(count === 2) return 2;
+        break;
+      case "🍒": // CHERRY
+        if(count === 3) return 5;
+        if(count === 2) return 1.5;
+        break;
+    }
+    return 0;
+  }
+
   function evaluateSpin(symbols, bet) {
-    // 3 sembol array'i: [s1, s2, s3]
     const [s1, s2, s3] = symbols;
     let win = 0;
 
-    // 3'lü eşleşme => 5x kazanç
+    // 3 sembol aynı
     if(s1 === s2 && s2 === s3) {
-      win = bet * 5;
-      // Tüm makaraları highlight
-      document.getElementById('reel1').classList.add('highlight');
-      document.getElementById('reel2').classList.add('highlight');
-      document.getElementById('reel3').classList.add('highlight');
+      const multiplier = getPayoutMultiplier(s1, 3);
+      win = bet * multiplier;
+      highlightReels([1,2,3]); 
     }
-    // En az 2 sembol eşleşiyorsa => 2x kazanç
+    // 2 sembol aynı
     else if(s1 === s2 || s2 === s3 || s1 === s3) {
-      win = bet * 2;
-      // Eşleşen makaraları highlight
+      // Hangileri eşit?
       if(s1 === s2) {
-        document.getElementById('reel1').classList.add('highlight');
-        document.getElementById('reel2').classList.add('highlight');
+        const multiplier = getPayoutMultiplier(s1, 2);
+        win = Math.max(win, bet * multiplier);
+        highlightReels([1,2]);
       }
       if(s2 === s3) {
-        document.getElementById('reel2').classList.add('highlight');
-        document.getElementById('reel3').classList.add('highlight');
+        const multiplier = getPayoutMultiplier(s2, 2);
+        win = Math.max(win, bet * multiplier);
+        highlightReels([2,3]);
       }
       if(s1 === s3) {
-        document.getElementById('reel1').classList.add('highlight');
-        document.getElementById('reel3').classList.add('highlight');
+        const multiplier = getPayoutMultiplier(s1, 2);
+        win = Math.max(win, bet * multiplier);
+        highlightReels([1,3]);
       }
     }
 
     if(win > 0) {
+      slotResult.innerText = `Kazandınız: $${win.toFixed(2)}`;
       money += win;
-      slotResult.innerText = `Tebrikler! Kazandınız: $${win}`;
-      totalWins += win;
+      updateMoneyUI();
+      createFloatingMessage(`+${win} USD`, true);
     } else {
       slotResult.innerText = "Kaybettiniz!";
-      totalLosses += bet;
     }
-
-    updateMoneyUI();
-    updateScoreboard();
   }
 
-  function updateScoreboard() {
-    document.getElementById('totalWins').innerText = totalWins;
-    document.getElementById('totalLosses').innerText = totalLosses;
-    document.getElementById('netProfit').innerText = (totalWins - totalLosses);
+  function highlightReels(indexes) {
+    indexes.forEach(i => {
+      document.getElementById(`reel${i}`).classList.add('highlight');
+    });
   }
 </script>
 </body>
