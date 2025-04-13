@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>İletişim ve Proje Yönetimi</title>
+  <!-- Google Font: Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    /****************************************
+     *           Temel Değişkenler          *
+     ****************************************/
+    :root {
+      --font-family: 'Montserrat', sans-serif;
+
+      /* Varsayılan (Light) tema renkleri */
+      --color-bg: #fefefe;
+      --color-bg-secondary: #ffffff;
+      --color-text: #333;
+      --color-primary: #ff7a59;
+      --color-accent: #ff6f91;
+      --color-danger: #ff4c4c;
+
+      /* Koyu (Dark) tema renkleri */
+      --dark-color-bg: #1C1C1C;
+      --dark-color-bg-secondary: #2A2A2A;
+      --dark-color-text: #FFFFFF;
+      --dark-color-primary: #ffb049;
+      --dark-color-accent: #ff9f00;
+      --dark-color-danger: #f85149;
+
+      /* Mavi (Blue) tema renkleri */
+      --blue-color-bg: #E6F7FF;
+      --blue-color-bg-secondary: #ffffff;
+      --blue-color-text: #333;
+      --blue-color-primary: #007acc;
+      --blue-color-accent: #0097c1;
+      --blue-color-danger: #dc3545;
+
+      --transition-speed: 0.4s;
+
+      /* Arkaplanda hafif bir gradient */
+      --background-gradient: linear-gradient(135deg, #74EBD5 0%, #9FACE6 100%);
+      /* Modal arka plan şeffaflığı */
+      --modal-overlay-bg: rgba(0, 0, 0, 0.6);
+    }
+
+    /****************************************
+     *           Tema Sınıfları             *
+     ****************************************/
+    /* Light Tema */
+    body.light-theme {
+      --color-bg: #fefefe;
+      --color-bg-secondary: #ffffff;
+      --color-text: #333;
+      --color-primary: #ff7a59;
+      --color-accent: #ff6f91;
+      --color-danger: #ff4c4c;
+    }
+
+    /* Dark Tema */
+    body.dark-theme {
+      --color-bg: var(--dark-color-bg);
+      --color-bg-secondary: var(--dark-color-bg-secondary);
+      --color-text: var(--dark-color-text);
+      --color-primary: var(--dark-color-primary);
+      --color-accent: var(--dark-color-accent);
+      --color-danger: var(--dark-color-danger);
+    }
+
+    /* Blue Tema */
+    body.blue-theme {
+      --color-bg: var(--blue-color-bg);
+      --color-bg-secondary: var(--blue-color-bg-secondary);
+      --color-text: var(--blue-color-text);
+      --color-primary: var(--blue-color-primary);
+      --color-accent: var(--blue-color-accent);
+      --color-danger: var(--blue-color-danger);
+    }
+
+    /****************************************
+     *         Global ve Reset CSS          *
+     ****************************************/
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--background-gradient);
+      color: var(--color-text);
+      transition: background var(--transition-speed), color var(--transition-speed);
+      min-height: 100vh;
+    }
+
+    /* Ana Container */
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      background: var(--color-bg-secondary);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      transition: background var(--transition-speed), color var(--transition-speed), box-shadow var(--transition-speed);
+    }
+
+    /* Başlık ve Kontroller */
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      margin-bottom: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .controls input,
+    .controls select {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      outline: none;
+      transition: border var(--transition-speed);
+    }
+    .controls input:focus,
+    .controls select:focus {
+      border-color: var(--color-accent);
+    }
+
+    .controls button {
+      background: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 8px 14px;
+      transition: background var(--transition-speed), transform var(--transition-speed);
+      letter-spacing: 0.5px;
+    }
+    .controls button:hover {
+      background: var(--color-accent);
+      transform: scale(1.05);
+    }
+
+    /* Tablo Stili */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    table thead tr {
+      background: var(--color-primary);
+      color: #fff;
+    }
+
+    table th,
+    table td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      vertical-align: middle;
+      transition: background var(--transition-speed), color var(--transition-speed);
+    }
+
+    table tr:last-child td {
+      border-bottom: none;
+    }
+
+    table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Not hücresi */
+    .note-cell {
+      cursor: pointer;
+      color: var(--color-accent);
+      font-weight: 500;
+    }
+
+    /* Genel Butonlar (Düzenle, Sil vb.) */
+    button.edit-btn,
+    button.delete-btn,
+    button.members-project,
+    button.edit-project,
+    button.delete-project,
+    button.delete-task {
+      background-color: var(--color-primary);
+      padding: 6px 12px;
+      border-radius: 4px;
+      color: #fff;
+      border: none;
+      margin: 2px;
+      font-size: 12px;
+      transition: transform var(--transition-speed), background var(--transition-speed);
+      cursor: pointer;
+    }
+    button.edit-btn:hover,
+    button.delete-btn:hover,
+    button.members-project:hover,
+    button.edit-project:hover,
+    button.delete-project:hover,
+    button.delete-task:hover {
+      background-color: var(--color-accent);
+      transform: scale(1.05);
+    }
+
+    /****************************************
+     *           Modal Stilleri             *
+     ****************************************/
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--modal-overlay-bg);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s;
+      z-index: 100;
+    }
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--color-bg-secondary);
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      position: relative;
+      animation: slideIn var(--transition-speed);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+    }
+
+    .modal-content h2 {
+      margin-bottom: 15px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .modal-content .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 26px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color var(--transition-speed), transform var(--transition-speed);
+    }
+    .modal-content .close:hover {
+      color: var(--color-accent);
+      transform: scale(1.2);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      outline: none;
+      transition: border var(--transition-speed);
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: var(--color-accent);
+    }
+    .form-group textarea {
+      resize: vertical;
+    }
+
+    .modal-content button {
+      width: 100%;
+      padding: 12px;
+      background: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background var(--transition-speed), transform var(--transition-speed);
+      margin-top: 8px;
+    }
+    .modal-content button:hover {
+      background: var(--color-accent);
+      transform: scale(1.03);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); }
+      to { transform: translateY(0); }
+    }
+
+    /****************************************
+     *           Görev Uyarı Rengi         *
+     ****************************************/
+    .task-due-soon {
+      background-color: rgba(255, 0, 0, 0.1) !important;
+    }
+
+    /****************************************
+     *            Responsive CSS            *
+     ****************************************/
+    @media (max-width: 600px) {
+      .container {
+        padding: 15px;
+        margin: 15px auto;
+      }
+      .controls button,
+      .controls input,
+      .controls select {
+        font-size: 12px;
+        padding: 6px 8px;
+      }
+      table th,
+      table td {
+        font-size: 12px;
+        padding: 8px;
+      }
+      .modal-content {
+        max-width: 90%;
+        width: 90%;
+      }
+      .modal-content button {
+        font-size: 14px;
+      }
+    }
+
+  </style>
+</head>
+<body class="light-theme">
+  <!-- Ana içerik (giriş yapmış kullanıcılar için) -->
+  <div id="mainContent" style="display:none;">
+    <!-- İletişim Yönetimi -->
+    <div class="container">
+      <header>
+        <h1>İletişim Yönetimi</h1>
+        <div class="controls">
+          <input type="text" id="searchInput" placeholder="Ara (isim, meslek, iletişim, konu)...">
+          <select id="themeSelect">
+            <option value="light">Light Tema</option>
+            <option value="dark">Dark Tema</option>
+            <option value="blue">Blue Tema</option>
+          </select>
+          <button id="addContactBtn">Yeni Kayıt Ekle</button>
+          <button id="logoutBtn">Çıkış Yap</button>
+        </div>
+      </header>
+      <table id="contactsTable">
+        <thead>
+          <tr>
+            <th>İsim Soyisim</th>
+            <th>Meslek</th>
+            <th>İletişim</th>
+            <th>Görüşme Konusu</th>
+            <th>Puan</th>
+            <th>Kategoriler</th>
+            <th>Not</th>
+            <th>Randevu Tarihi</th>
+            <th>İşlemler</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Kayıtlar Firestore'dan yüklenecek -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Proje Yönetimi -->
+    <div class="container">
+      <header>
+        <h1>Proje Yönetimi</h1>
+        <div class="controls">
+          <button id="createProjectBtn">Proje Oluştur</button>
+        </div>
+      </header>
+      <table id="projectsTable">
+        <thead>
+          <tr>
+            <th>Proje Adı</th>
+            <th>Oluşturma Tarihi</th>
+            <th>Üyeler</th>
+            <th>İşlemler</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Projeler Firestore'dan yüklenecek -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Görev Yönetimi -->
+    <div class="container">
+      <header>
+        <h1>Görev Yönetimi</h1>
+        <div class="controls">
+          <button id="createTaskBtn">Görev Ekle</button>
+        </div>
+      </header>
+      <table id="tasksTable">
+        <thead>
+          <tr>
+            <th>Görev Başlığı</th>
+            <th>Proje</th>
+            <th>Görev Verilen Kişi</th>
+            <th>Ünvan</th>
+            <th>Son Tarih</th>
+            <th>Durum</th>
+            <th>İşlemler</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Görevler Firestore'dan yüklenecek -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Kayıt/İletişim Formu Modal -->
+  <div id="contactModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeContactModal">&times;</span>
+      <h2 id="modalTitle">Yeni Kayıt</h2>
+      <form id="contactForm">
+        <div class="form-group">
+          <label for="isim">İsim Soyisim:</label>
+          <input type="text" id="isim" name="isim" required>
+        </div>
+        <div class="form-group">
+          <label for="meslek">Meslek:</label>
+          <input type="text" id="meslek" name="meslek" required>
+        </div>
+        <div class="form-group">
+          <label for="puan">Puan:</label>
+          <input type="number" id="puan" name="puan" required>
+        </div>
+        <div class="form-group">
+          <label for="iletisim">İletişim Bilgileri:</label>
+          <input type="text" id="iletisim" name="iletisim" required>
+        </div>
+        <div class="form-group">
+          <label for="konu">Görüşme Konusu:</label>
+          <input type="text" id="konu" name="konu" required>
+        </div>
+        <div class="form-group">
+          <label for="randevu">Randevu Tarihi:</label>
+          <input type="date" id="randevu" name="randevu">
+        </div>
+        <div class="form-group">
+          <label for="kategoriler">Kategoriler (Ctrl ile çoklu seçim):</label>
+          <select id="kategoriler" name="kategoriler" multiple required></select>
+        </div>
+        <div class="form-group">
+          <label for="notlar">Not:</label>
+          <textarea id="notlar" name="notlar"></textarea>
+        </div>
+        <button type="submit">Kaydet</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Not Görüntüleme Modal (Popup) -->
+  <div id="noteModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeNoteModal">&times;</span>
+      <h2>Not Detayı</h2>
+      <p id="fullNoteContent"></p>
+    </div>
+  </div>
+
+  <!-- Kullanıcı Giriş/Kayıt Modalı -->
+  <div id="authModal" class="modal">
+    <div class="modal-content">
+      <h2 id="authTitle">Giriş Yap</h2>
+      <form id="authForm">
+        <div class="form-group">
+          <label for="authEmail">Email:</label>
+          <input type="email" id="authEmail" name="authEmail" required>
+        </div>
+        <div class="form-group">
+          <label for="authPassword">Şifre:</label>
+          <input type="password" id="authPassword" name="authPassword" required>
+        </div>
+        <button type="submit" id="authSubmitBtn">Giriş Yap</button>
+      </form>
+      <p id="toggleAuthText">
+        Hesabınız yok mu? <a href="#" id="toggleAuthLink">Kayıt Ol</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Proje Oluştur Modalı -->
+  <div id="projectModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeProjectModal">&times;</span>
+      <h2 id="projectModalTitle">Proje Oluştur</h2>
+      <form id="projectForm">
+        <div class="form-group">
+          <label for="projectName">Proje Adı:</label>
+          <input type="text" id="projectName" name="projectName" required>
+        </div>
+        <button type="submit">Kaydet</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Proje Üyesi Ekleme Modalı -->
+  <div id="projectMembersModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeProjectMembersModal">&times;</span>
+      <h2>Proje Üyeleri</h2>
+      <form id="projectMembersForm">
+        <div class="form-group">
+          <label for="projectMembersSelect">Kişi Seç:</label>
+          <select id="projectMembersSelect" required>
+            <!-- Mevcut contact'lardan eklenecek -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="memberTitle">Ünvan:</label>
+          <input type="text" id="memberTitle" placeholder="Örn: Geliştirici, Tasarımcı vs.">
+        </div>
+        <button type="submit">Ekle</button>
+      </form>
+      <h3>Mevcut Üyeler:</h3>
+      <ul id="existingMembersList">
+        <!-- Projedeki üyeler listelenecek -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Görev Ekle Modalı -->
+  <div id="taskModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeTaskModal">&times;</span>
+      <h2>Görev Ekle</h2>
+      <form id="taskForm">
+        <div class="form-group">
+          <label for="taskTitle">Görev Başlığı:</label>
+          <input type="text" id="taskTitle" required>
+        </div>
+        <div class="form-group">
+          <label for="taskProjectSelect">Proje Seç:</label>
+          <select id="taskProjectSelect" required>
+            <!-- Proje Listesi eklenecek -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="taskAssigneeSelect">Görev Verilen Kişi:</label>
+          <select id="taskAssigneeSelect" required>
+            <!-- Seçilen projedeki üyeler dinamik olarak yüklenecek -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="taskDueDate">Son Tarih:</label>
+          <input type="date" id="taskDueDate" required>
+        </div>
+        <div class="form-group">
+          <label for="taskStatus">Durum:</label>
+          <select id="taskStatus">
+            <option value="Beklemede">Beklemede</option>
+            <option value="Devam Ediyor">Devam Ediyor</option>
+            <option value="Tamamlandı">Tamamlandı</option>
+          </select>
+        </div>
+        <button type="submit">Kaydet</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase & Uygulama Kodları -->
+  <script type="module">
+    /********************************
+     *           Firebase          *
+     ********************************/
+    import { 
+      initializeApp 
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { 
+      getAnalytics 
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
+    import { 
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      query,
+      orderBy,
+      doc,
+      updateDoc,
+      deleteDoc,
+      where,
+      arrayUnion
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
+    // Firebase yapılandırma
+    const firebaseConfig = {
+      apiKey: "AIzaSyDdIsSQKIA5zzdXJs6Au-WGR0I93e1SyWU",
+      authDomain: "network-d6c4b.firebaseapp.com",
+      projectId: "network-d6c4b",
+      storageBucket: "network-d6c4b.firebasestorage.app",
+      messagingSenderId: "834721835048",
+      appId: "1:834721835048:web:299bb4e2655c4422046d1d",
+      measurementId: "G-0E3746ZX1Z"
+    };
+
+    // Firebase başlatma
+    const appFirebase = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(appFirebase);
+    const db = getFirestore(appFirebase);
+    const auth = getAuth(appFirebase);
+
+    /********************************
+     *      Global Değişkenler      *
+     ********************************/
+    let editingContactId = null;
+    let fetchedContacts = [];  // Kişiler
+    let isLoginMode = true;
+
+    let editingProjectId = null;
+    let fetchedProjects = [];  // Projeler
+
+    let fetchedTasks = [];     // Görevler
+
+    // Görev yakınlaşma eşiği (ör. 3 gün)
+    const DUE_SOON_DAYS = 3;
+    const NOTE_TRUNCATE_LENGTH = 50;
+
+    /********************************
+     *        DOM Elemanları        *
+     ********************************/
+    // Auth Modal
+    const authModal = document.getElementById('authModal');
+    const authTitle = document.getElementById('authTitle');
+    const authForm = document.getElementById('authForm');
+    const authEmail = document.getElementById('authEmail');
+    const authPassword = document.getElementById('authPassword');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    const toggleAuthText = document.getElementById('toggleAuthText');
+
+    // Ana içerik
+    const mainContent = document.getElementById('mainContent');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // Contacts
+    const contactModal = document.getElementById('contactModal');
+    const closeContactModal = document.getElementById('closeContactModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const contactForm = document.getElementById('contactForm');
+    const addContactBtn = document.getElementById('addContactBtn');
+    const contactsTableBody = document.querySelector('#contactsTable tbody');
+    const searchInput = document.getElementById('searchInput');
+    const themeSelect = document.getElementById('themeSelect');
+    const kategoriSelect = document.getElementById('kategoriler');
+
+    // Not
+    const noteModal = document.getElementById('noteModal');
+    const closeNoteModal = document.getElementById('closeNoteModal');
+    const fullNoteContent = document.getElementById('fullNoteContent');
+
+    // Proje
+    const createProjectBtn = document.getElementById('createProjectBtn');
+    const projectModalEl = document.getElementById('projectModal');
+    const closeProjectModal = document.getElementById('closeProjectModal');
+    const projectForm = document.getElementById('projectForm');
+    const projectModalTitle = document.getElementById('projectModalTitle');
+    const projectsTableBody = document.querySelector('#projectsTable tbody');
+
+    // Proje Üyeleri
+    const projectMembersModal = document.getElementById('projectMembersModal');
+    const closeProjectMembersModal = document.getElementById('closeProjectMembersModal');
+    const projectMembersForm = document.getElementById('projectMembersForm');
+    const projectMembersSelect = document.getElementById('projectMembersSelect');
+    const memberTitle = document.getElementById('memberTitle');
+    const existingMembersList = document.getElementById('existingMembersList');
+
+    // Görevler
+    const createTaskBtn = document.getElementById('createTaskBtn');
+    const taskModalEl = document.getElementById('taskModal');
+    const closeTaskModal = document.getElementById('closeTaskModal');
+    const taskForm = document.getElementById('taskForm');
+    const tasksTableBody = document.querySelector('#tasksTable tbody');
+    const taskTitle = document.getElementById('taskTitle');
+    const taskProjectSelect = document.getElementById('taskProjectSelect');
+    const taskAssigneeSelect = document.getElementById('taskAssigneeSelect');
+    const taskDueDate = document.getElementById('taskDueDate');
+    const taskStatus = document.getElementById('taskStatus');
+
+    /********************************
+     *       Kategori Listesi       *
+     ********************************/
+    const categories = [
+      "Teknoloji", "Bilim", "Spor", "Sanat", "Edebiyat", "Müzik", "Sinema", "Tiyatro", "Moda", "Yemek",
+      "Seyahat", "Fotoğrafçılık", "Eğitim", "Sağlık", "Finans", "İş Dünyası", "Girişimcilik", "Pazarlama", "Sosyal Medya", "Oyun",
+      "Kişisel Gelişim", "Motivasyon", "Psikoloji", "Felsefe", "Tarih", "Coğrafya", "Spor Dalları", "Yüzme", "Koşu", "Bisiklet",
+      "Yoga", "Meditasyon", "Aile", "Arkadaşlık", "İlişkiler", "Çevre", "Doğa", "Hayvanlar", "Bitkiler", "Bilgisayar", "Yazılım",
+      "Donanım", "İnternet", "Mobil Teknoloji", "Sosyal Sorumluluk", "Gönüllülük", "Kültür", "Gelenekler", "Dil", "Çeviri",
+      "Kitaplar", "Klasikler", "Bilim Kurgu", "Fantastik", "Gerilim", "Polisiye", "Macera", "Romantik", "Komedi", "Dram",
+      "Animasyon", "Belgesel", "Müzikal", "Reklam", "Tasarım", "Mimari", "İç Mimari", "Sanat Tarihi", "Dijital Sanat", "Heykel",
+      "Resim", "El Sanatları", "Moda Tasarımı", "Takı Tasarımı", "Aksesuar", "Otomotiv", "Havacılık", "Uzay", "Denizcilik", "Balıkçılık",
+      "Tarım", "Hayvancılık", "Gıda", "Restoran", "Kafe", "Bar", "Eğlence", "Parti", "Tatil", "Kamp", "Dağcılık",
+      "Sualtı Dalışı", "Arkeoloji", "Antika", "Koleksiyon", "Futbol", "Basketbol", "Voleybol", "Tenis", "Golf"
+    ];
+    // Kategori seçenekleri
+    categories.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat;
+      option.textContent = cat;
+      kategoriSelect.appendChild(option);
+    });
+
+    /********************************
+     *      Modal Aç/Kapa Fonks.    *
+     ********************************/
+    function openModal(modalElement) {
+      modalElement.classList.add('active');
+    }
+    function closeModal(modalElement) {
+      modalElement.classList.remove('active');
+    }
+    // Auth
+    function showAuthModal() {
+      openModal(authModal);
+    }
+    function hideAuthModal() {
+      closeModal(authModal);
+    }
+
+    // Contact Modal
+    addContactBtn.addEventListener('click', () => {
+      editingContactId = null;
+      modalTitle.textContent = 'Yeni Kayıt';
+      contactForm.reset();
+      openModal(contactModal);
+    });
+    closeContactModal.addEventListener('click', () => {
+      closeModal(contactModal);
+      contactForm.reset();
+      editingContactId = null;
+    });
+
+    // Note Modal
+    closeNoteModal.addEventListener('click', () => {
+      closeModal(noteModal);
+      fullNoteContent.textContent = '';
+    });
+
+    // Proje Modal
+    createProjectBtn.addEventListener('click', () => {
+      editingProjectId = null;
+      projectModalTitle.textContent = "Proje Oluştur";
+      projectForm.reset();
+      openModal(projectModalEl);
+    });
+    closeProjectModal.addEventListener('click', () => {
+      closeModal(projectModalEl);
+      projectForm.reset();
+      editingProjectId = null;
+    });
+
+    // Proje Üyeleri Modal
+    closeProjectMembersModal.addEventListener('click', () => {
+      closeModal(projectMembersModal);
+      projectMembersForm.reset();
+    });
+
+    // Görev Modal
+    createTaskBtn.addEventListener('click', () => {
+      taskForm.reset();
+      populateProjectSelect();
+      openModal(taskModalEl);
+    });
+    closeTaskModal.addEventListener('click', () => {
+      closeModal(taskModalEl);
+      taskForm.reset();
+    });
+
+    /********************************
+     *        Auth İşlemleri        *
+     ********************************/
+    toggleAuthText.addEventListener('click', function(e) {
+      if (e.target && e.target.id === "toggleAuthLink") {
+        e.preventDefault();
+        isLoginMode = !isLoginMode;
+        authTitle.textContent = isLoginMode ? "Giriş Yap" : "Kayıt Ol";
+        authSubmitBtn.textContent = isLoginMode ? "Giriş Yap" : "Kayıt Ol";
+        toggleAuthText.innerHTML = isLoginMode 
+          ? 'Hesabınız yok mu? <a href="#" id="toggleAuthLink">Kayıt Ol</a>'
+          : 'Zaten hesabınız var mı? <a href="#" id="toggleAuthLink">Giriş Yap</a>';
+      }
+    });
+
+    authForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const email = authEmail.value.trim();
+      const password = authPassword.value.trim();
+      try {
+        if (isLoginMode) {
+          await signInWithEmailAndPassword(auth, email, password);
+        } else {
+          await createUserWithEmailAndPassword(auth, email, password);
+        }
+        hideAuthModal();
+      } catch (error) {
+        console.error("Auth Hatası: ", error);
+        alert(error.message);
+      }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error("Çıkış Hatası: ", error);
+      }
+    });
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        mainContent.style.display = 'block';
+        fetchContacts();
+        fetchProjects();
+        fetchTasks();
+      } else {
+        mainContent.style.display = 'none';
+        showAuthModal();
+      }
+    });
+
+    /********************************
+     *      Contact İşlemleri       *
+     ********************************/
+    async function fetchContacts() {
+      if (!auth.currentUser) return;
+      const contactsCol = collection(db, "contacts");
+      const qContacts = query(
+        contactsCol,
+        orderBy("puan", "desc"),
+        where("userId", "==", auth.currentUser.uid)
+      );
+      const snapshot = await getDocs(qContacts);
+      fetchedContacts = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      updateContactsTable(fetchedContacts);
+    }
+
+    function updateContactsTable(contacts) {
+      contactsTableBody.innerHTML = '';
+      contacts.forEach(contact => {
+        let fullNote = contact.notlar || '';
+        let truncatedNote = fullNote;
+        if (fullNote.length > NOTE_TRUNCATE_LENGTH) {
+          truncatedNote = fullNote.substr(0, NOTE_TRUNCATE_LENGTH) + '...';
+        }
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${contact.isim}</td>
+          <td>${contact.meslek}</td>
+          <td>${contact.iletisim}</td>
+          <td>${contact.konu}</td>
+          <td>${contact.puan}</td>
+          <td>${(contact.kategoriler || []).join(', ')}</td>
+          <td class="note-cell" data-full="${fullNote}">${truncatedNote}</td>
+          <td>${contact.randevu ? new Date(contact.randevu.seconds * 1000).toLocaleDateString() : ''}</td>
+          <td>
+            <button class="edit-btn" data-id="${contact.id}">Düzenle</button>
+            <button class="delete-btn" data-id="${contact.id}">Sil</button>
+          </td>
+        `;
+        contactsTableBody.appendChild(tr);
+      });
+    }
+
+    contactsTableBody.addEventListener('click', function(e) {
+      if (e.target.classList.contains('note-cell')) {
+        const fullText = e.target.getAttribute('data-full');
+        fullNoteContent.textContent = fullText;
+        openModal(noteModal);
+      }
+    });
+
+    contactForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (!auth.currentUser) {
+        alert("Lütfen giriş yapın!");
+        return;
+      }
+      const isim = document.getElementById('isim').value.trim();
+      const meslek = document.getElementById('meslek').value.trim();
+      const puan = parseFloat(document.getElementById('puan').value);
+      const iletisim = document.getElementById('iletisim').value.trim();
+      const konu = document.getElementById('konu').value.trim();
+      const randevu = document.getElementById('randevu').value;
+      const notlar = document.getElementById('notlar').value.trim();
+      const selectedOptions = Array.from(kategoriSelect.selectedOptions).map(option => option.value);
+
+      const contactData = {
+        isim,
+        meslek,
+        puan,
+        iletisim,
+        konu,
+        notlar,
+        randevu: randevu ? new Date(randevu) : null,
+        kategoriler: selectedOptions,
+        userId: auth.currentUser.uid,
+        createdAt: new Date()
+      };
+
+      try {
+        if (editingContactId) {
+          const docRef = doc(db, "contacts", editingContactId);
+          await updateDoc(docRef, contactData);
+        } else {
+          await addDoc(collection(db, "contacts"), contactData);
+        }
+        closeModal(contactModal);
+        contactForm.reset();
+        editingContactId = null;
+        fetchContacts();
+      } catch (error) {
+        console.error("Veri kaydetme hatası: ", error);
+        alert("Kayıt yapılamadı, lütfen konsoldaki hatayı kontrol edin.");
+      }
+    });
+
+    contactsTableBody.addEventListener('click', async function(e) {
+      if (e.target.classList.contains('edit-btn')) {
+        const id = e.target.getAttribute('data-id');
+        const contact = fetchedContacts.find(c => c.id === id);
+        if (contact) {
+          editingContactId = id;
+          modalTitle.textContent = 'Kayıt Düzenle';
+          document.getElementById('isim').value = contact.isim;
+          document.getElementById('meslek').value = contact.meslek;
+          document.getElementById('puan').value = contact.puan;
+          document.getElementById('iletisim').value = contact.iletisim;
+          document.getElementById('konu').value = contact.konu;
+          document.getElementById('randevu').value = contact.randevu 
+            ? new Date(contact.randevu.seconds * 1000).toISOString().split('T')[0] 
+            : '';
+          document.getElementById('notlar').value = contact.notlar;
+          Array.from(kategoriSelect.options).forEach(option => {
+            option.selected = (contact.kategoriler || []).includes(option.value);
+          });
+          openModal(contactModal);
+        }
+      }
+      if (e.target.classList.contains('delete-btn')) {
+        const id = e.target.getAttribute('data-id');
+        if (confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
+          try {
+            await deleteDoc(doc(db, "contacts", id));
+            fetchContacts();
+          } catch (error) {
+            console.error("Silme hatası: ", error);
+            alert("Kayıt silinemedi!");
+          }
+        }
+      }
+    });
+
+    // Arama
+    searchInput.addEventListener('input', function() {
+      const queryStr = searchInput.value.toLowerCase();
+      const rows = contactsTableBody.getElementsByTagName('tr');
+      Array.from(rows).forEach(row => {
+        const cells = row.getElementsByTagName('td');
+        let match = false;
+        for (let i = 0; i < 4; i++) {
+          if (cells[i] && cells[i].textContent.toLowerCase().indexOf(queryStr) > -1) {
+            match = true;
+            break;
+          }
+        }
+        row.style.display = match ? '' : 'none';
+      });
+    });
+
+    /********************************
+     *       Tema Değiştirme        *
+     ********************************/
+    themeSelect.addEventListener('change', function() {
+      const theme = themeSelect.value;
+      document.body.classList.remove('light-theme', 'dark-theme', 'blue-theme');
+      if (theme === 'light') {
+        document.body.classList.add('light-theme');
+      } else if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+      } else if (theme === 'blue') {
+        document.body.classList.add('blue-theme');
+      }
+    });
+    document.body.classList.add('light-theme'); // Varsayılan tema
+
+    /********************************
+     *     Proje Yönetimi Kısmı     *
+     ********************************/
+    async function fetchProjects() {
+      if (!auth.currentUser) return;
+      const projectsCol = collection(db, "projects");
+      const qProjects = query(
+        projectsCol,
+        orderBy("createdAt", "desc"),
+        where("userId", "==", auth.currentUser.uid)
+      );
+      const snapshot = await getDocs(qProjects);
+      fetchedProjects = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      updateProjectsTable();
+    }
+
+    function updateProjectsTable() {
+      projectsTableBody.innerHTML = '';
+      fetchedProjects.forEach(project => {
+        const tr = document.createElement('tr');
+        const createdDate = project.createdAt 
+          ? new Date(project.createdAt.seconds * 1000).toLocaleDateString() 
+          : '';
+        const members = project.members || [];
+        const memberList = members.map(m => `${m.contactName} (${m.title || 'Üye'})`).join(', ');
+
+        tr.innerHTML = `
+          <td>${project.projectName}</td>
+          <td>${createdDate}</td>
+          <td>${memberList}</td>
+          <td>
+            <button class="edit-project" data-id="${project.id}">Düzenle</button>
+            <button class="members-project" data-id="${project.id}">Üyeler</button>
+            <button class="delete-project" data-id="${project.id}">Sil</button>
+          </td>
+        `;
+        projectsTableBody.appendChild(tr);
+      });
+    }
+
+    projectForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!auth.currentUser) {
+        alert("Lütfen giriş yapın!");
+        return;
+      }
+      const projectName = document.getElementById('projectName').value.trim();
+      const projectData = {
+        projectName,
+        userId: auth.currentUser.uid,
+        createdAt: new Date(),
+        members: []
+      };
+      try {
+        if (editingProjectId) {
+          const docRef = doc(db, "projects", editingProjectId);
+          await updateDoc(docRef, { projectName });
+        } else {
+          await addDoc(collection(db, "projects"), projectData);
+        }
+        closeModal(projectModalEl);
+        projectForm.reset();
+        editingProjectId = null;
+        fetchProjects();
+      } catch (error) {
+        console.error("Proje kaydetme hatası: ", error);
+        alert("Proje kaydedilemedi.");
+      }
+    });
+
+    projectsTableBody.addEventListener('click', async (e) => {
+      const btn = e.target;
+      if (btn.classList.contains('edit-project')) {
+        const id = btn.getAttribute('data-id');
+        const project = fetchedProjects.find(p => p.id === id);
+        if (project) {
+          editingProjectId = id;
+          projectModalTitle.textContent = "Proje Düzenle";
+          document.getElementById('projectName').value = project.projectName;
+          openModal(projectModalEl);
+        }
+      } else if (btn.classList.contains('delete-project')) {
+        const id = btn.getAttribute('data-id');
+        if (confirm("Bu projeyi silmek istediğinize emin misiniz?")) {
+          try {
+            await deleteDoc(doc(db, "projects", id));
+            fetchProjects();
+          } catch (error) {
+            console.error("Proje silme hatası: ", error);
+            alert("Proje silinemedi!");
+          }
+        }
+      } else if (btn.classList.contains('members-project')) {
+        const id = btn.getAttribute('data-id');
+        editingProjectId = id;
+        openProjectMembersModal(id);
+      }
+    });
+
+    function openProjectMembersModal(projectId) {
+      const project = fetchedProjects.find(p => p.id === projectId);
+      if (!project) return;
+      projectMembersSelect.innerHTML = '';
+      fetchedContacts.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.isim;
+        projectMembersSelect.appendChild(opt);
+      });
+      updateProjectMembersList(project);
+      openModal(projectMembersModal);
+    }
+
+    function updateProjectMembersList(project) {
+      existingMembersList.innerHTML = '';
+      if (!project.members) return;
+      project.members.forEach(member => {
+        const li = document.createElement('li');
+        li.textContent = `${member.contactName} - ${member.title || 'Üye'}`;
+        existingMembersList.appendChild(li);
+      });
+    }
+
+    projectMembersForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!editingProjectId) return;
+      const selectedContactId = projectMembersSelect.value;
+      const titleVal = memberTitle.value.trim();
+      const contact = fetchedContacts.find(c => c.id === selectedContactId);
+      if (!contact) return;
+      try {
+        const docRef = doc(db, "projects", editingProjectId);
+        const project = fetchedProjects.find(p => p.id === editingProjectId);
+
+        const newMember = {
+          contactId: contact.id,
+          contactName: contact.isim,
+          title: titleVal
+        };
+        // Firestore'da arrayUnion ile ekleme
+        await updateDoc(docRef, {
+          members: arrayUnion(newMember)
+        });
+        // Lokal veri güncelle
+        project.members.push(newMember);
+        updateProjectMembersList(project);
+
+        memberTitle.value = '';
+      } catch (error) {
+        console.error("Üye ekleme hatası: ", error);
+        alert("Üye eklenemedi!");
+      }
+    });
+
+    /********************************
+     *       Görev Yönetimi         *
+     ********************************/
+    async function fetchTasks() {
+      if (!auth.currentUser) return;
+      const tasksCol = collection(db, "tasks");
+      const qTasks = query(
+        tasksCol,
+        orderBy("dueDate", "asc"),
+        where("userId", "==", auth.currentUser.uid)
+      );
+      const snapshot = await getDocs(qTasks);
+      fetchedTasks = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      updateTasksTable();
+    }
+
+    function updateTasksTable() {
+      tasksTableBody.innerHTML = '';
+      fetchedTasks.forEach(task => {
+        const proj = fetchedProjects.find(p => p.id === task.projectId);
+        const projectName = proj ? proj.projectName : "";
+        let assigneeInfo = "";
+        let assigneeTitle = "";
+        if (proj && proj.members) {
+          const member = proj.members.find(m => m.contactId === task.assigneeId);
+          if (member) {
+            assigneeInfo = member.contactName;
+            assigneeTitle = member.title;
+          }
+        }
+        let dueDateStr = "";
+        let rowClass = "";
+        if (task.dueDate) {
+          const due = new Date(task.dueDate.seconds * 1000);
+          dueDateStr = due.toLocaleDateString();
+
+          const now = new Date();
+          const diffInMs = due - now;
+          const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+          if (diffInDays <= DUE_SOON_DAYS && diffInDays >= 0 && task.status !== "Tamamlandı") {
+            rowClass = "task-due-soon";
+          }
+        }
+        const tr = document.createElement('tr');
+        tr.className = rowClass;
+        tr.innerHTML = `
+          <td>${task.title}</td>
+          <td>${projectName}</td>
+          <td>${assigneeInfo}</td>
+          <td>${assigneeTitle || ''}</td>
+          <td>${dueDateStr}</td>
+          <td>${task.status || ''}</td>
+          <td>
+            <button class="delete-task" data-id="${task.id}">Sil</button>
+          </td>
+        `;
+        tasksTableBody.appendChild(tr);
+      });
+    }
+
+    function populateProjectSelect() {
+      taskProjectSelect.innerHTML = '';
+      fetchedProjects.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.projectName;
+        taskProjectSelect.appendChild(opt);
+      });
+      loadAssigneesForProject(taskProjectSelect.value);
+    }
+
+    taskProjectSelect.addEventListener('change', () => {
+      loadAssigneesForProject(taskProjectSelect.value);
+    });
+
+    function loadAssigneesForProject(projectId) {
+      taskAssigneeSelect.innerHTML = '';
+      const proj = fetchedProjects.find(p => p.id === projectId);
+      if (proj && proj.members) {
+        proj.members.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.contactId;
+          opt.textContent = `${m.contactName} (${m.title || 'Üye'})`;
+          taskAssigneeSelect.appendChild(opt);
+        });
+      }
+    }
+
+    taskForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!auth.currentUser) {
+        alert("Lütfen giriş yapın!");
+        return;
+      }
+      const titleVal = taskTitle.value.trim();
+      const projectIdVal = taskProjectSelect.value;
+      const assigneeIdVal = taskAssigneeSelect.value;
+      const dueDateVal = taskDueDate.value;
+      const statusVal = taskStatus.value;
+
+      const taskData = {
+        title: titleVal,
+        projectId: projectIdVal,
+        assigneeId: assigneeIdVal,
+        dueDate: dueDateVal ? new Date(dueDateVal) : null,
+        status: statusVal,
+        userId: auth.currentUser.uid,
+        createdAt: new Date()
+      };
+
+      try {
+        await addDoc(collection(db, "tasks"), taskData);
+        closeModal(taskModalEl);
+        taskForm.reset();
+        fetchTasks();
+      } catch (error) {
+        console.error("Görev ekleme hatası: ", error);
+        alert("Görev eklenemedi!");
+      }
+    });
+
+    tasksTableBody.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('delete-task')) {
+        const id = e.target.getAttribute('data-id');
+        if (confirm("Bu görevi silmek istediğinize emin misiniz?")) {
+          try {
+            await deleteDoc(doc(db, "tasks", id));
+            fetchTasks();
+          } catch (error) {
+            console.error("Görev silme hatası: ", error);
+            alert("Görev silinemedi!");
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
