@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Black Dolphine - Mafia Oyunu</title>
   <style>
-    /* -----------------------------------------------------
-       GENEL SIFIRLAMA & GENEL STİL
-    ----------------------------------------------------- */
+    /* -------- GENEL SIFIRLAMA -------- */
     * {
       margin: 0;
       padding: 0;
@@ -15,242 +13,204 @@
     }
 
     body {
-      min-height: 100vh;
-      /* Arka plan görseli veya degrade ile karıştırılabilir */
-      /* background: url('https://via.placeholder.com/2000x1200?text=Mafia+Background') center/cover no-repeat; */
-      background: linear-gradient(135deg, #0d0d0d, #262626, #111111);
+      /* Arka plan: degrade + yumuşak desen */
+      background: linear-gradient(135deg, #1b1b1b 0%, #2d2c2c 50%, #000000 100%);
       color: #f1f1f1;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      position: relative;
+      background-repeat: no-repeat;
+      background-size: cover;
     }
 
-    /* -----------------------------------------------------
-       HEADER BÖLÜMÜ
-    ----------------------------------------------------- */
+    /* -------- HEADER ALANI -------- */
     header {
-      position: sticky;
-      top: 0;
-      width: 100%;
-      background: rgba(20, 20, 20, 0.9);
-      backdrop-filter: blur(5px);
-      padding: 1rem 2rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 999;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      background: rgba(20, 20, 20, 0.85);
+      padding: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.7);
+      border-bottom: 1px solid #333;
     }
 
-    .header-content {
-      width: 100%;
-      max-width: 1200px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: relative;
-    }
-
-    /* Profil Butonu (Sol Üst) */
-    .profile-btn {
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      margin-left: 1rem;
-      outline: none;
-    }
-
-    .profile-btn img {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: 2px solid #ff4747;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
-      transition: transform 0.3s ease;
-    }
-    .profile-btn img:hover {
-      transform: scale(1.05);
-    }
-
-    .logo {
-      font-size: 1.6rem;
-      font-weight: bold;
-      color: #ff4747;
-      letter-spacing: 1px;
+    .header-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #ff4444;
       text-transform: uppercase;
     }
 
-    .money {
-      font-size: 1rem;
-      background: #222;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      border: 1px solid #333;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
+    /* -------- PROFİL BUTONU (Sol Üst) -------- */
+    .profile-button {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: url('https://via.placeholder.com/60?text=Me') center/cover no-repeat;
+      border: 2px solid #ff4444;
+      cursor: pointer;
+      z-index: 1100;
+      transition: transform 0.3s;
     }
-    .money span {
-      color: #ffcc00;
-      font-weight: bold;
+    .profile-button:hover {
+      transform: scale(1.05);
     }
 
-    /* -----------------------------------------------------
-       ANA İÇERİK
-    ----------------------------------------------------- */
+    /* -------- PARA GÖSTERGESİ (Sağ Üst) -------- */
+    .money-indicator {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.85);
+      border: 1px solid #333;
+      border-radius: 5px;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      z-index: 1100;
+      color: #fff;
+    }
+    .money-indicator span {
+      color: #ffcc00;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+
+    /* -------- ANA KISIM -------- */
     main {
-      width: 100%;
-      max-width: 1200px;
-      margin: 1rem auto 2rem auto;
-      padding: 1rem;
       flex: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1rem;
+    }
+
+    h1, h2, h3, h4, p {
+      margin-bottom: 1rem;
+      text-align: center;
     }
 
     h1 {
-      margin-top: 1rem;
-      font-size: 2rem;
-      color: #ff4747;
-      text-shadow: 0 2px 5px rgba(0,0,0,0.6);
+      color: #ff4444;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
     }
 
-    p {
-      max-width: 800px;
-      text-align: center;
-      line-height: 1.4;
-      margin-bottom: 1rem;
-    }
-
-    /* -----------------------------------------------------
-       GÖREV KARTLARI
-    ----------------------------------------------------- */
-    .tasks-container {
+    /* -------- RÜTBE KARTLARI ALANI -------- */
+    .rank-selection {
       display: flex;
+      gap: 2rem;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 1.5rem;
-      margin-top: 1rem;
-      width: 100%;
-      max-width: 1200px;
+      margin-top: 2rem;
     }
 
-    .task-card {
-      width: 220px;
-      min-height: 160px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      padding: 1rem;
-      text-align: center;
+    .card {
       position: relative;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: transform 0.3s;
-      cursor: pointer;
+      width: 220px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
-
-    .task-card:hover {
-      transform: translateY(-3px);
-    }
-
-    .task-rank {
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-      font-size: 1rem;
+    .card h2 {
       color: #ffcc00;
-    }
-
-    .task-desc {
-      font-size: 0.9rem;
       margin-bottom: 0.5rem;
     }
-
-    .task-status {
+    .card p {
+      margin-bottom: 1rem;
       font-weight: bold;
-      font-size: 0.85rem;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
     }
 
-    /* Kilitli Görev Kartı */
-    .locked-task {
+    /* Kilitli efekt */
+    .locked {
       opacity: 0.4;
     }
-    .locked-task::after {
+    .locked::after {
       content: "KİLİTLİ";
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
-      color: #ff4444;
-      padding: 0.3rem 0.7rem;
-      border-radius: 5px;
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
-
-    /* Tamamlanmış Görev Kartı */
-    .completed-task {
-      opacity: 0.7;
-      border-color: #50fa7b;
-    }
-
-    /* -----------------------------------------------------
-       GÖREV TAMAMLAMA POPUP
-    ----------------------------------------------------- */
-    .task-completion-popup {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #222;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.7);
-      z-index: 2000;
-      text-align: center;
-      width: 90%;
-      max-width: 400px;
-    }
-    .task-completion-popup.active {
-      display: block;
-    }
-
-    .close-popup-btn {
-      margin-top: 1rem;
-      background: #50fa7b;
-      color: #333;
-      font-weight: bold;
-      border: none;
+      background: rgba(0,0,0,0.8);
       padding: 0.5rem 1rem;
       border-radius: 5px;
-      cursor: pointer;
+      font-weight: bold;
+      color: #ff4444;
+      pointer-events: none;
     }
 
-    /* -----------------------------------------------------
-       GÖREV COOLDOWN - BEKLEME
-    ----------------------------------------------------- */
-    .cooldown-timer {
-      display: none;
+    /* -------- BUTON GENEL STİL -------- */
+    .btn {
+      background: #ff4444;
+      color: #fff;
+      border: none;
+      padding: 0.7rem 1.2rem;
       font-size: 1rem;
-      font-weight: bold;
-      color: #50fa7b;
-      margin-top: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin-top: 0.5rem;
     }
-    .cooldown-timer.active {
+    .btn:hover {
+      background: #cc0000;
+    }
+    .btn:disabled {
+      background: #555 !important;
+      cursor: not-allowed;
+    }
+
+    /* -------- GÖREV KUTUSU -------- */
+    .task-container {
+      margin-top: 2rem;
+      width: 100%;
+      max-width: 600px;
+      background: rgba(255,255,255,0.07);
+      padding: 1.5rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      display: none;
+      text-align: center;
+      position: relative;
+    }
+    .task-container.active {
       display: block;
     }
+    .task-container h3 {
+      color: #ffcc00;
+      margin-bottom: 1rem;
+    }
+    .task-desc {
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      color: #fff;
+    }
+    .timer {
+      margin-top: 1rem;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #50fa7b;
+    }
 
-    /* -----------------------------------------------------
-       PROFİL MODAL
-    ----------------------------------------------------- */
-    .profile-modal-overlay {
+    /* -------- MODAL GENEL -------- */
+    .modal-overlay {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
@@ -258,216 +218,306 @@
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 3000;
+      z-index: 2000;
     }
-    .profile-modal-overlay.active {
+    .modal-overlay.active {
       display: flex;
     }
-
-    .profile-modal {
+    .modal {
       background: #1c1c1c;
       border-radius: 10px;
       padding: 2rem;
-      max-width: 400px;
+      max-width: 500px;
       width: 90%;
       text-align: center;
       box-shadow: 0 5px 15px rgba(0,0,0,0.8);
       position: relative;
     }
-
-    .profile-close-btn {
+    .close-modal {
       position: absolute;
       top: 1rem;
       right: 1rem;
-      background: none;
+      background: transparent;
       border: none;
       color: #fff;
-      font-size: 1.3rem;
-      font-weight: bold;
+      font-size: 1.2rem;
       cursor: pointer;
     }
 
-    .profile-modal h2 {
+    /* -------- PROFİL (SOL ÜST) MODAL İÇERİĞİ -------- */
+    .modal h2 {
       color: #ffcc00;
       margin-bottom: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
     }
-
-    .profile-section {
-      margin-bottom: 1rem;
+    .profile-content {
       text-align: left;
-    }
-    .profile-label {
-      font-weight: bold;
-      color: #ffcc00;
-      display: inline-block;
-      width: 120px;
-    }
-
-    .inventory-list {
       margin-top: 1rem;
     }
-    .inventory-item {
-      margin: 0.3rem 0;
+    .profile-content p {
+      margin-bottom: 0.5rem;
     }
 
-    /* BAR ALANLARI (Dayanıklılık, Nüfus, Onur) */
+    /* Bar bölümleri */
+    .bar-section {
+      margin: 1rem 0;
+    }
+    .bar-title {
+      margin-bottom: 0.5rem;
+      color: #ffcc00;
+      font-weight: bold;
+    }
     .bar-container {
       width: 100%;
       max-width: 300px;
-      height: 16px;
+      height: 20px;
       background: #444;
-      border-radius: 8px;
+      border-radius: 5px;
       overflow: hidden;
-      margin-top: 0.3rem;
+      margin: 0.5rem 0;
       position: relative;
     }
     .bar-fill {
       height: 100%;
-      width: 0%;
       transition: width 0.3s ease;
     }
     .dayaniklik-bar {
       background: #00bfff;
     }
-    .nufus-bar {
+    .onur-bar {
       background: #ffa500;
     }
-    .onur-bar {
-      background: #ff6a00;
-    }
-
     .bar-value {
-      font-weight: bold;
-      font-size: 0.9rem;
-      margin-left: 0.5rem;
-    }
-
-    /* Rozet Emoji */
-    .rozet-emojisi {
-      font-size: 1.2rem;
-    }
-    .rozet-count {
-      margin-left: 0.2rem;
       color: #fff;
       font-weight: bold;
     }
+    .badge-count {
+      font-weight: bold;
+      color: #fff;
+      margin-left: 5px;
+    }
 
-    /* -----------------------------------------------------
-       FOOTER
-    ----------------------------------------------------- */
-    footer {
+    /* Nüfus ve köy ismi */
+    .nufus-info, .koy-info {
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    /* Envanter listesi */
+    .inventory-list {
+      margin-top: 1rem;
+      padding: 0.5rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 5px;
+    }
+    .inventory-list p {
+      margin-bottom: 0.5rem;
+    }
+    .inventory-list img {
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+
+    /* Çete üye sayısı */
+    .cete-info {
+      margin-top: 0.5rem;
+      font-weight: bold;
+      color: #ffcc00;
+    }
+
+    hr {
+      border: 1px solid #444;
+      margin: 1rem 0;
+    }
+
+    /* -------- MARKET MODALI -------- */
+    .market-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 5px;
+    }
+
+    /* -------- KUMARHANE MODALI -------- */
+    .kumarhane-input {
+      margin: 1rem 0;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .kumarhane-input input {
+      width: 100px;
+      padding: 0.3rem;
       text-align: center;
-      padding: 1rem;
-      background: #111;
-      font-size: 0.9rem;
-      color: #ccc;
+      border-radius: 5px;
+      border: 1px solid #999;
+    }
+    #gambleResult {
+      margin-top: 0.5rem;
+    }
+
+    /* -------- SAĞ ALT BUTONLAR -------- */
+    .fixed-btn-group {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: flex-end;
+    }
+    .fixed-btn-group .btn {
+      min-width: 130px;
+      text-align: center;
+    }
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
 <body>
 
   <!-- Profil Butonu (Sol Üst) -->
-  <button class="profile-btn" onclick="toggleProfileModal()">
-    <img src="https://via.placeholder.com/50?text=PF" alt="Profil" />
-  </button>
+  <div class="profile-button" onclick="toggleProfileModal()"></div>
+
+  <!-- Para Göstergesi (Sağ Üst) -->
+  <div class="money-indicator">
+    Dolar: <span id="money">500000</span>
+  </div>
 
   <!-- HEADER -->
   <header>
-    <div class="header-content">
-      <div class="logo">Black Dolphine</div>
-      <div class="money">Dolar: <span id="money">0</span></div>
-    </div>
+    <div class="header-title">Black Dolphine</div>
   </header>
 
-  <!-- ANA ALAN -->
+  <!-- ANA İÇERİK -->
   <main>
     <h1>Mafya Dünyasına Hoş Geldiniz!</h1>
-    <p>
-      Tüm görevler aşağıda listelenmiştir. Her biri başlangıçta kilitlidir. 
-      Rütbeye uygun görevleri tamamladıkça kilitler açılacak, rozetler ve statlar kazanacaksınız. 
-      Baron rütbesine geçiş için toplam en az 2 rozet gereklidir. Her görev sonrası 10 saniye bekleme süresi vardır.
-    </p>
+    <h4>Vakur (Mavi 🏅), Hatip (Turuncu 🏅) veya Baron (Kırmızı 🏅) olarak suç dünyasına adım at!</h4>
 
-    <!-- Görevler -->
-    <div class="tasks-container" id="tasksContainer">
-      <!-- Kartlar JS ile oluşturulacak -->
+    <!-- RÜTBE KARTLARI -->
+    <div class="rank-selection">
+      <!-- Vakur Card -->
+      <div class="card" id="cardVakur">
+        <h2>Vakur</h2>
+        <p>Mavi 🏅</p>
+        <button class="btn" onclick="selectRank('Vakur')">Seç</button>
+      </div>
+
+      <!-- Hatip Card (Başta kilitli, rozet >= 1 olunca açılacak) -->
+      <div class="card locked" id="cardHatip">
+        <h2>Hatip</h2>
+        <p>Turuncu 🏅</p>
+        <button class="btn" style="visibility:hidden;">Seç</button>
+      </div>
+
+      <!-- Baron Card (2 rozet olunca açılacak) -->
+      <div class="card locked" id="cardBaron">
+        <h2>Baron</h2>
+        <p>Kırmızı 🏅</p>
+        <button class="btn" style="visibility:hidden;">Seç</button>
+      </div>
     </div>
 
-    <!-- Cooldown Timer -->
-    <div class="cooldown-timer" id="cooldownTimer">
-      Yeni görev için bekleme: <span id="timerValue">10</span> sn
+    <!-- Görev Alanı -->
+    <div class="task-container" id="taskContainer">
+      <h3 id="rankTitle"></h3>
+      <div class="task-desc" id="taskDescription"></div>
+      <button class="btn" id="completeTaskBtn" onclick="completeTask()">Görevi Tamamla</button>
+      <div class="timer" id="countdownTimer" style="display:none;">
+        Bekleme süresi: <span id="timerValue">10</span> sn
+      </div>
     </div>
   </main>
 
-  <!-- Görev Tamamlama Popup -->
-  <div class="task-completion-popup" id="taskCompletionPopup">
-    <div id="taskCompletionMessage">Tebrikler, görevi tamamladınız!</div>
-    <button class="close-popup-btn" onclick="closeTaskCompletionPopup()">Kapat</button>
+  <!-- SAĞ ALT BUTON GRUBU (Market ve Kumarhane) -->
+  <div class="fixed-btn-group">
+    <button class="btn hidden" id="marketBtn" onclick="toggleMarketModal()">Market</button>
+    <button class="btn hidden" id="kumarhaneBtn" onclick="toggleKumarhaneModal()">Kumarhane</button>
   </div>
 
-  <!-- PROFİL MODAL -->
-  <div class="profile-modal-overlay" id="profileModal">
-    <div class="profile-modal">
-      <button class="profile-close-btn" onclick="toggleProfileModal()">X</button>
-      <h2>Profil</h2>
-
-      <div class="profile-section">
-        <span class="profile-label">Köy Adı:</span>
-        <span id="koyAdi">Henüz Satın Alınmadı</span>
-      </div>
-
-      <div class="profile-section">
-        <span class="profile-label">Güç (Vakur):</span>
-        <span id="gucValue">0</span>
-        <div class="bar-container">
-          <div class="bar-fill dayaniklik-bar" id="dayaniklikBar"></div>
+  <!-- PROFİL (SOL ÜST) MODAL -->
+  <div class="modal-overlay" id="profileModal">
+    <div class="modal">
+      <button class="close-modal" onclick="toggleProfileModal()">X</button>
+      <h2>Profil & Köy Bilgisi</h2>
+      <div class="profile-content">
+        <p class="koy-info">Köy İsmi: <span id="koyIsmi">DerinVadi</span></p>
+        <p class="nufus-info">Nüfus: <span id="nufus">0</span></p>
+        <hr/>
+        <div class="bar-section">
+          <div class="bar-title">Dayanıklılık (Mavi)</div>
+          <div class="bar-container">
+            <div class="bar-fill dayaniklik-bar" id="dayaniklikBar" style="width:0;"></div>
+          </div>
+          <div class="bar-value">Güç: <span id="dayaniklikValue">0</span></div>
         </div>
-      </div>
-
-      <div class="profile-section">
-        <span class="profile-label">Nüfus (Hatip):</span>
-        <span id="nufusValue">0</span>
-        <div class="bar-container">
-          <div class="bar-fill nufus-bar" id="nufusBar"></div>
+        <div class="bar-section">
+          <div class="bar-title">Onur (Turuncu)</div>
+          <div class="bar-container">
+            <div class="bar-fill onur-bar" id="onurBar" style="width:0;"></div>
+          </div>
+          <div class="bar-value">Onur: <span id="onurValue">0</span></div>
         </div>
-      </div>
-
-      <div class="profile-section">
-        <span class="profile-label">Onur (Hatip):</span>
-        <span id="onurValue">0</span>
-        <div class="bar-container">
-          <div class="bar-fill onur-bar" id="onurBar"></div>
+        <p>Rozetler: 
+          Mavi <span class="badge-count" id="blueBadgeCount">0</span> | 
+          Turuncu <span class="badge-count" id="orangeBadgeCount">0</span> | 
+          Kırmızı <span class="badge-count" id="redBadgeCount">0</span>
+        </p>
+        <hr/>
+        <div class="inventory-list" id="inventoryList">
+          <p>Envanteriniz boş!</p>
         </div>
-      </div>
-
-      <div class="profile-section">
-        <span class="profile-label">Rozetler:</span>
-        <div>
-          <span class="rozet-emojisi">🏅</span> Vakur: <span class="rozet-count" id="blueBadgeCount">0</span><br/>
-          <span class="rozet-emojisi">🏅</span> Hatip: <span class="rozet-count" id="orangeBadgeCount">0</span><br/>
-          <span class="rozet-emojisi">🏅</span> Baron: <span class="rozet-count" id="redBadgeCount">0</span>
-        </div>
-      </div>
-
-      <hr/>
-
-      <h3>Mal Varlıkları</h3>
-      <div class="inventory-list" id="inventoryList">
-        <p>Şu an hiçbir varlığınız yok.</p>
+        <div class="cete-info">Çete Üye Sayısı: <span id="ceteUyeSayisi">0</span></div>
       </div>
     </div>
   </div>
 
-  <footer>
-    Black Dolphine Mafia Oyunu &copy; Tüm Hakları Saklıdır
-  </footer>
+  <!-- MARKET MODAL -->
+  <div class="modal-overlay" id="marketModal">
+    <div class="modal">
+      <button class="close-modal" onclick="toggleMarketModal()">X</button>
+      <h2>Market</h2>
+      <p style="margin-bottom:1rem;">(Baron seviyesinde alım yapabilirsiniz)</p>
+      <div class="market-item" id="koyItem">
+        <div>Köy (75.000$)</div>
+        <button class="btn" onclick="buyItem('Köy', 75000)">Satın Al</button>
+      </div>
+      <div class="market-item">
+        <div>At (5.000$)</div>
+        <button class="btn" onclick="buyItem('At', 5000)">Satın Al</button>
+      </div>
+      <div class="market-item">
+        <div>Uçak (4.000$)</div>
+        <button class="btn" onclick="buyItem('Uçak', 4000)">Satın Al</button>
+      </div>
+      <div class="market-item">
+        <div>Kumarhane Kur (40.000$)</div>
+        <button class="btn" onclick="buyItem('Kumarhane', 40000)">Satın Al</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KUMARHANE MODAL -->
+  <div class="modal-overlay" id="kumarhaneModal">
+    <div class="modal">
+      <button class="close-modal" onclick="toggleKumarhaneModal()">X</button>
+      <h2>Kumarhane</h2>
+      <p>Şansınızı deneyin! %50 kazanma şansı.</p>
+      <div class="kumarhane-input">
+        <input type="number" id="betAmount" placeholder="Bahis ($)" />
+        <button class="btn" onclick="playGamble()">Oyna</button>
+      </div>
+      <p id="gambleResult"></p>
+    </div>
+  </div>
 
   <script>
-    /* -----------------------------------------------------
-       DEĞİŞKENLER & BAŞLANGIÇ
-    ----------------------------------------------------- */
+    /* ---------------------------
+       GÖREV LİSTELERİ 
+       --------------------------- */
     const vakurTasks = [
       "Aileye yardım et",
       "Bir çocuğun eğitim masrafını karşıla",
@@ -480,11 +530,10 @@
       "Gençlere spor malzemesi dağıt",
       "Halk sağlığı merkezinde gönüllü ol"
     ];
-
     const hatipTasks = [
       "Aileleri barıştır",
       "Sokak kavgalarını durdur",
-      "Yerel yönetimle arabuluculuk yap",
+      "Yerel yönetimde arabuluculuk yap",
       "Büyük bir uzlaşı toplantısı düzenle",
       "Toplumsal protestoyu sakinleştir",
       "Halkı paniğe karşı ikna et",
@@ -493,345 +542,383 @@
       "Gönüllü barış elçisi ol",
       "Uluslararası barış forumunda konuş"
     ];
-
     const baronTasks = [
       "Kaçakçılık operasyonu düzenle",
       "Uyuşturucu sevkiyatı yap",
-      "Hırsızlık planla ve uygula",
-      "Silah ticareti organize et",
-      "Tefecilik ağı kur",
-      "Gazino soygunu gerçekleştir",
-      "Polise rüşvet ver",
+      "Bankaya sızıp hırsızlık yap",
+      "Silah ticareti ağı kur",
+      "Tefecilik ile bölgeyi kontrol et",
+      "Gazino soygunu planla",
+      "Polise rüşvet ver ve izini sil",
       "Karakol baskını düzenle",
-      "Sınır ötesi kaçakçılık planla",
-      "Büyük komployu yönet"
+      "Sınır ötesi kaçakçılık yap",
+      "Büyük komplo planla ve yürüt"
     ];
 
-    // Tüm görevleri tek diziye toplayalım
-    let tasksData = [];
+    /* ---------------------------
+       DEĞİŞKENLER 
+       --------------------------- */
+    let currentRank = null;
+    let vakurIndex = 0;
+    let hatipIndex = 0;
+    let baronIndex = 0;
 
-    // Cooldown ile ilgili
-    let isCooldown = false;
-    let timeLeft = 10;
-    let cooldownTimer = null;
+    let blueBadgeCount = 0;
+    let orangeBadgeCount = 0;
+    let redBadgeCount = 0;
 
-    // Statlar, Rozetler, Para
     let money = 500000;
-    let blueBadgeCount = 0;   // Vakur rozet
-    let orangeBadgeCount = 0; // Hatip rozet
-    let redBadgeCount = 0;    // Baron rozet
-    let guc = 0;              // Vakur -> Dayanıklılık
-    let nufus = 0;            // Hatip -> Nüfus
-    let onur = 0;             // Hatip -> Onur
+    let dayaniklilik = 0; // Mavi
+    let onur = 0;         // Turuncu
+    let nufus = 0;        // Turuncu
 
-    // Envanter
+    let isCooldown = false;
+    let cooldownTimer = null;
+    let timeLeft = 10;
+
+    // Market - Envanter
     let hasKoy = false;
     let atCount = 0;
     let ucakCount = 0;
     let kumarhaneCount = 0;
-    let koyAdi = "Henüz Satın Alınmadı";
+    let ceteUyeSayisi = 0;
 
-    // Sayfa yüklendiğinde
-    window.onload = () => {
-      initializeTasks();
-      renderTasks();
-      updateUI();
-    };
+    const taskContainer = document.getElementById('taskContainer');
+    const rankTitle = document.getElementById('rankTitle');
+    const taskDescription = document.getElementById('taskDescription');
+    const completeTaskBtn = document.getElementById('completeTaskBtn');
+    const countdownTimer = document.getElementById('countdownTimer');
+    const timerValue = document.getElementById('timerValue');
 
-    /* -----------------------------------------------------
-       GÖREVLERİ OLUŞTURMA
-    ----------------------------------------------------- */
-    function initializeTasks() {
-      // Vakur
-      for (let i = 0; i < vakurTasks.length; i++) {
-        tasksData.push({
-          id: "Vakur-" + i,
-          rank: "Vakur",
-          description: vakurTasks[i],
-          locked: true,
-          completed: false
-        });
-      }
-      // Hatip
-      for (let i = 0; i < hatipTasks.length; i++) {
-        tasksData.push({
-          id: "Hatip-" + i,
-          rank: "Hatip",
-          description: hatipTasks[i],
-          locked: true,
-          completed: false
-        });
-      }
-      // Baron
-      for (let i = 0; i < baronTasks.length; i++) {
-        tasksData.push({
-          id: "Baron-" + i,
-          rank: "Baron",
-          description: baronTasks[i],
-          locked: true,
-          completed: false
-        });
+    const cardVakur = document.getElementById('cardVakur');
+    const cardHatip = document.getElementById('cardHatip');
+    const cardBaron = document.getElementById('cardBaron');
+
+    const marketBtn = document.getElementById('marketBtn');
+    const kumarhaneBtn = document.getElementById('kumarhaneBtn');
+
+    /* ---------------------------
+       RÜTBE SEÇİMİ
+       --------------------------- */
+    function selectRank(rank) {
+      if(isCooldown) {
+        alert("Yeni görevi seçebilmek için bekleme süresinin dolmasını bekleyin!");
+        return;
       }
 
-      // İstenirse ilk görevler kilit açılabilir; 
-      // ancak "hepsi kilitli olsun" dendiği için açmıyoruz. 
-      // tasksData.find(t => t.id === "Vakur-0").locked = false;
-      // tasksData.find(t => t.id === "Hatip-0").locked = false;
+      // Kilit kontrolü
+      if(rank === "Hatip" && blueBadgeCount < 1) {
+        alert("Hatip için en az 1 Mavi Rozet gerekli!");
+        return;
+      }
+      if(rank === "Baron" && (blueBadgeCount + orangeBadgeCount + redBadgeCount) < 2) {
+        alert("Baron için en az 2 rozet kazanmalısınız!");
+        return;
+      }
+
+      currentRank = rank;
+      showNextTask();
     }
 
-    /* -----------------------------------------------------
-       GÖREVLERİ ARAYÜZE BASTIRMA
-    ----------------------------------------------------- */
-    function renderTasks() {
-      const tasksContainer = document.getElementById('tasksContainer');
-      tasksContainer.innerHTML = "";
+    function showNextTask() {
+      taskContainer.classList.add('active');
+      countdownTimer.style.display = "none";
+      completeTaskBtn.disabled = false;
 
-      tasksData.forEach(task => {
-        const card = document.createElement('div');
-        card.className = "task-card";
-
-        // Rütbeye göre görsel bir metin
-        let rankText = "";
-        if (task.rank === "Vakur") rankText = "Vakur (Mavi 🏅)";
-        if (task.rank === "Hatip") rankText = "Hatip (Turuncu 🏅)";
-        if (task.rank === "Baron") rankText = "Baron (Kırmızı 🏅)";
-
-        // Kartın içeriği
-        card.innerHTML = `
-          <div class="task-rank">${rankText}</div>
-          <div class="task-desc">${task.description}</div>
-          <div class="task-status">${task.completed ? "Tamamlandı" : (task.locked ? "Kilitli" : "Hazır")}</div>
-        `;
-
-        // Kilitli veya tamamlandı class'larını ekleyelim
-        if (task.locked) {
-          card.classList.add('locked-task');
-        }
-        if (task.completed) {
-          card.classList.add('completed-task');
-        }
-
-        // Tıklama
-        card.onclick = () => {
-          if (task.locked) {
-            alert("Bu görev kilitli!");
-            return;
-          }
-          if (task.completed) {
-            alert("Bu görevi zaten tamamladınız!");
-            return;
-          }
-          if (isCooldown) {
-            alert("Yeni bir görev için bekleme süresinin dolması gerekiyor!");
-            return;
-          }
-          // Görevi tamamla
-          completeTask(task);
-        };
-
-        tasksContainer.appendChild(card);
-      });
+      if(currentRank === "Vakur") {
+        rankTitle.innerText = "Vakur Görevi (Mavi 🏅)";
+        taskDescription.innerText = vakurTasks[vakurIndex] 
+          ? vakurTasks[vakurIndex]
+          : "Tüm Vakur görevlerini bitirdiniz!";
+        if(!vakurTasks[vakurIndex]) completeTaskBtn.disabled = true;
+      }
+      else if(currentRank === "Hatip") {
+        rankTitle.innerText = "Hatip Görevi (Turuncu 🏅)";
+        taskDescription.innerText = hatipTasks[hatipIndex] 
+          ? hatipTasks[hatipIndex]
+          : "Tüm Hatip görevlerini bitirdiniz!";
+        if(!hatipTasks[hatipIndex]) completeTaskBtn.disabled = true;
+      }
+      else if(currentRank === "Baron") {
+        rankTitle.innerText = "Baron Görevi (Kırmızı 🏅)";
+        taskDescription.innerText = baronTasks[baronIndex] 
+          ? baronTasks[baronIndex]
+          : "Tüm Baron görevlerini bitirdiniz!";
+        if(!baronTasks[baronIndex]) completeTaskBtn.disabled = true;
+      }
     }
 
-    /* -----------------------------------------------------
-       GÖREV TAMAMLAMA
-    ----------------------------------------------------- */
-    function completeTask(task) {
-      // Rütbeye göre ödüller
-      let rozetKazanc = getRandomRozet(); // 1 ile 3 arası rastgele rozet
-      let message = "";
-
-      if (task.rank === "Vakur") {
+    /* ---------------------------
+       GÖREV TAMAMLAMA 
+       --------------------------- */
+    function completeTask() {
+      if(currentRank === "Vakur" && vakurTasks[vakurIndex]) {
+        const rozetKazanc = getRandomRozet(); // 1-3
         blueBadgeCount += rozetKazanc;
-        guc += rozetKazanc;
-        message = `${rozetKazanc} Mavi Rozet, Dayanıklılık +${rozetKazanc}`;
+        dayaniklilik += rozetKazanc;
+        alert(`Görevi tamamladınız! +${rozetKazanc} Mavi Rozet (Vakur)`);
+        vakurIndex++;
       }
-      else if (task.rank === "Hatip") {
+      else if(currentRank === "Hatip" && hatipTasks[hatipIndex]) {
+        const rozetKazanc = getRandomRozet();
         orangeBadgeCount += rozetKazanc;
-        nufus += rozetKazanc;
         onur += rozetKazanc;
-        message = `${rozetKazanc} Turuncu Rozet, Nüfus +${rozetKazanc}, Onur +${rozetKazanc}`;
+        nufus += rozetKazanc;
+        alert(`Görevi tamamladınız! +${rozetKazanc} Turuncu Rozet (Hatip)\n+${rozetKazanc} Onur, +${rozetKazanc} Nüfus`);
+        hatipIndex++;
       }
-      else if (task.rank === "Baron") {
+      else if(currentRank === "Baron" && baronTasks[baronIndex]) {
+        const rozetKazanc = getRandomRozet();
         redBadgeCount += rozetKazanc;
-        let cash = getRandomMoney(300, 800);
-        money += cash;
-        message = `${rozetKazanc} Kırmızı Rozet, +${cash} Dolar kazandınız`;
-        // Ek etki: 1 vakur rozetini düşürebilir
-        if (blueBadgeCount > 0) {
+        const cashGain = getRandomMoney(300, 800);
+        money += cashGain;
+
+        // Kötü iş => varsa 1 mavi rozet kaybı
+        if(blueBadgeCount > 0) {
           blueBadgeCount -= 1;
-          guc = Math.max(guc - 1, 0);
-          message += " (Vakur rozeti -1)";
+          dayaniklilik = Math.max(dayaniklilik - 1, 0);
+          alert(`Görevi tamamladınız! +${rozetKazanc} Kırmızı Rozet (Baron), +${cashGain} $ \n(Mavi Rozet -1)`);
+        } else {
+          alert(`Görevi tamamladınız! +${rozetKazanc} Kırmızı Rozet (Baron), +${cashGain} $`);
         }
+        baronIndex++;
+      }
+      else {
+        alert("Bu rütbeye ait görev kalmadı!");
+        return;
       }
 
-      // Görevi güncelle
-      task.completed = true;
-      // Mantıksal olarak bir sonraki görevi açacaksanız burada açabilirsiniz:
-      unlockNextTask(task.rank, task.id);
-
-      // Baron kilidini kontrol edelim (en az 2 rozet varsa Baron-0 açılsın)
-      checkBaronUnlock();
-
-      // Popup mesajı
-      document.getElementById('taskCompletionMessage').innerText = `Görev Tamamlandı! ${message}`;
-      document.getElementById('taskCompletionPopup').classList.add('active');
-
-      // Cooldown başlat
-      startCooldown();
-
-      // Arayüzü güncelle
       updateUI();
-      renderTasks();
+      startCooldown();
     }
 
-    /* -----------------------------------------------------
-       SONRAKİ GÖREVİ KİLİT AÇMA (İsteğe bağlı)
-    ----------------------------------------------------- */
-    function unlockNextTask(rank, currentId) {
-      let index = parseInt(currentId.split("-")[1]);
-      let nextIndex = index + 1;
-      let nextTaskId = `${rank}-${nextIndex}`;
-      let nextTask = tasksData.find(t => t.id === nextTaskId);
-      if (nextTask) {
-        nextTask.locked = false;
-      }
-    }
-
-    /* -----------------------------------------------------
-       BARON KİLİDİ KONTROLÜ
-    ----------------------------------------------------- */
-    function checkBaronUnlock() {
-      let totalRozet = blueBadgeCount + orangeBadgeCount + redBadgeCount;
-      if (totalRozet >= 2) {
-        let baronFirstTask = tasksData.find(t => t.id === "Baron-0");
-        if (baronFirstTask && baronFirstTask.locked && !baronFirstTask.completed) {
-          baronFirstTask.locked = false;
-        }
-      }
-    }
-
-    /* -----------------------------------------------------
-       RANDOM FONKSİYONLAR
-    ----------------------------------------------------- */
     function getRandomRozet() {
-      return Math.floor(Math.random() * 3) + 1; // 1-3
+      return Math.floor(Math.random() * 3) + 1; // 1,2,3
     }
     function getRandomMoney(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    /* -----------------------------------------------------
-       COOLDOWN (10sn)
-    ----------------------------------------------------- */
+    /* ---------------------------
+       10 SN GÖREV BEKLEME SÜRESİ
+       --------------------------- */
     function startCooldown() {
       isCooldown = true;
-      document.getElementById('cooldownTimer').classList.add('active');
+      completeTaskBtn.disabled = true;
+      countdownTimer.style.display = "block";
       timeLeft = 10;
-      document.getElementById('timerValue').innerText = timeLeft;
+      timerValue.innerText = timeLeft;
 
       cooldownTimer = setInterval(() => {
         timeLeft--;
-        document.getElementById('timerValue').innerText = timeLeft;
-        if (timeLeft <= 0) {
+        timerValue.innerText = timeLeft;
+        if(timeLeft <= 0) {
           clearInterval(cooldownTimer);
           isCooldown = false;
-          document.getElementById('cooldownTimer').classList.remove('active');
+          countdownTimer.style.display = "none";
+          alert("Süre doldu! Yeni bir rütbe seçebilirsiniz.");
+          taskContainer.classList.remove('active');
         }
       }, 1000);
     }
 
-    /* -----------------------------------------------------
-       POPUP KAPATMA
-    ----------------------------------------------------- */
-    function closeTaskCompletionPopup() {
-      document.getElementById('taskCompletionPopup').classList.remove('active');
-    }
-
-    /* -----------------------------------------------------
-       PROFİL MODAL
-    ----------------------------------------------------- */
-    function toggleProfileModal() {
-      const profileModal = document.getElementById('profileModal');
-      // Her açılışta envanter ve diğer değerleri güncelle
-      updateInventoryUI();
-      updateUI();
-      profileModal.classList.toggle('active');
-    }
-
-    /* -----------------------------------------------------
-       ENVANTER GÜNCELLE
-    ----------------------------------------------------- */
-    function updateInventoryUI() {
-      const inventoryList = document.getElementById('inventoryList');
-      inventoryList.innerHTML = "";
-
-      let hasItem = false;
-
-      if (hasKoy) {
-        let div = document.createElement('div');
-        div.className = "inventory-item";
-        div.innerText = `Köy (1 adet)`;
-        inventoryList.appendChild(div);
-        hasItem = true;
-      }
-      if (atCount > 0) {
-        let div = document.createElement('div');
-        div.className = "inventory-item";
-        div.innerText = `At (x${atCount})`;
-        inventoryList.appendChild(div);
-        hasItem = true;
-      }
-      if (ucakCount > 0) {
-        let div = document.createElement('div');
-        div.className = "inventory-item";
-        div.innerText = `Uçak (x${ucakCount})`;
-        inventoryList.appendChild(div);
-        hasItem = true;
-      }
-      if (kumarhaneCount > 0) {
-        let div = document.createElement('div');
-        div.className = "inventory-item";
-        div.innerText = `Kumarhane (x${kumarhaneCount})`;
-        inventoryList.appendChild(div);
-        hasItem = true;
-      }
-
-      if (!hasItem) {
-        inventoryList.innerHTML = "<p>Şu an hiçbir varlığınız yok.</p>";
-      }
-    }
-
-    /* -----------------------------------------------------
-       ARAYÜZ GÜNCELLE
-    ----------------------------------------------------- */
+    /* ---------------------------
+       ARAYÜZ GÜNCELLEME 
+       --------------------------- */
     function updateUI() {
-      // Para
-      document.getElementById('money').innerText = money;
-
-      // Rozetler
+      // Rozet bilgileri
       document.getElementById('blueBadgeCount').innerText = blueBadgeCount;
       document.getElementById('orangeBadgeCount').innerText = orangeBadgeCount;
       document.getElementById('redBadgeCount').innerText = redBadgeCount;
 
-      // Güç (Dayanıklılık)
-      document.getElementById('gucValue').innerText = guc;
-      let dPercent = Math.min(guc * 10, 300);
-      document.getElementById('dayaniklikBar').style.width = dPercent + "px";
-
-      // Nüfus
-      document.getElementById('nufusValue').innerText = nufus;
-      let nPercent = Math.min(nufus * 10, 300);
-      document.getElementById('nufusBar').style.width = nPercent + "px";
+      // Dayanıklılık
+      document.getElementById('dayaniklikValue').innerText = dayaniklilik;
+      let dBarWidth = dayaniklilik * 10; 
+      if(dBarWidth > 300) dBarWidth = 300;
+      document.getElementById('dayaniklikBar').style.width = dBarWidth + 'px';
 
       // Onur
       document.getElementById('onurValue').innerText = onur;
-      let oPercent = Math.min(onur * 10, 300);
-      document.getElementById('onurBar').style.width = oPercent + "px";
+      let oBarWidth = onur * 10; 
+      if(oBarWidth > 300) oBarWidth = 300;
+      document.getElementById('onurBar').style.width = oBarWidth + 'px';
 
-      // Köy Adı
-      document.getElementById('koyAdi').innerText = koyAdi;
+      // Nüfus
+      document.getElementById('nufus').innerText = nufus;
+
+      // Para
+      document.getElementById('money').innerText = money;
+
+      // Kilit açma kontrolleri
+      checkLocks();
+
+      // Envanter, çete güncelle
+      updateInventoryUI();
     }
+
+    function checkLocks() {
+      // Hatip açma: en az 1 mavi rozet
+      if(blueBadgeCount >= 1 && cardHatip.classList.contains('locked')) {
+        cardHatip.classList.remove('locked');
+        cardHatip.querySelector('button').style.visibility = "visible";
+      }
+      // Baron açma: toplamda 2+ rozet
+      let totalBadges = blueBadgeCount + orangeBadgeCount + redBadgeCount;
+      if(totalBadges >= 2 && cardBaron.classList.contains('locked')) {
+        cardBaron.classList.remove('locked');
+        cardBaron.querySelector('button').style.visibility = "visible";
+
+        // Market ve Kumarhane butonlarını göster
+        marketBtn.classList.remove('hidden');
+        kumarhaneBtn.classList.remove('hidden');
+      }
+    }
+
+    /* ---------------------------
+       PROFİL MODALI AÇ/KAPAT
+       --------------------------- */
+    function toggleProfileModal() {
+      const profileModal = document.getElementById('profileModal');
+      // Her açılışta güncelleme
+      updateUI();
+      profileModal.classList.toggle('active');
+    }
+
+    /* ---------------------------
+       MARKET MODALI AÇ/KAPAT
+       --------------------------- */
+    function toggleMarketModal() {
+      const mModal = document.getElementById('marketModal');
+      mModal.classList.toggle('active');
+    }
+
+    /* ---------------------------
+       MARKET SATIN ALMA
+       --------------------------- */
+    function buyItem(itemName, price) {
+      if(money < price) {
+        alert("Yeterli paranız yok!");
+        return;
+      }
+
+      // Baron seviyesi (2 rozet) kontrol
+      let totalBadges = blueBadgeCount + orangeBadgeCount + redBadgeCount;
+      if(totalBadges < 2) {
+        alert("Satın almak için Baron seviyesine erişmelisiniz (2 rozet)!");
+        return;
+      }
+
+      money -= price;
+
+      switch(itemName) {
+        case "Köy":
+          if(hasKoy) {
+            alert("Zaten bir köyünüz var!");
+            return;
+          }
+          hasKoy = true;
+          alert("Köy satın alındı!");
+          document.getElementById('koyItem').style.display = "none";
+          break;
+        case "At":
+          atCount++;
+          ceteUyeSayisi += 2;
+          alert("At satın alındı (+2 çete üyesi)!");
+          break;
+        case "Uçak":
+          ucakCount++;
+          ceteUyeSayisi += 5;
+          alert("Uçak satın alındı (+5 çete üyesi)!");
+          break;
+        case "Kumarhane":
+          kumarhaneCount++;
+          ceteUyeSayisi += 3;
+          alert("Kumarhane kuruldu (+3 çete üyesi)!");
+          break;
+      }
+
+      updateUI();
+    }
+
+    /* Envanter güncelleme */
+    function updateInventoryUI() {
+      const inventoryList = document.getElementById('inventoryList');
+      inventoryList.innerHTML = "";
+      let empty = true;
+
+      if(hasKoy) {
+        empty = false;
+        const divKoy = document.createElement('div');
+        divKoy.innerHTML = `<img src="https://via.placeholder.com/32?text=K%C3%B6y" alt="Köy"> 1 adet Köy`;
+        inventoryList.appendChild(divKoy);
+      }
+      if(atCount > 0) {
+        empty = false;
+        const divAt = document.createElement('div');
+        divAt.innerHTML = `<img src="https://via.placeholder.com/32?text=%F0%9F%90%8E" alt="At"> At (x${atCount})`;
+        inventoryList.appendChild(divAt);
+      }
+      if(ucakCount > 0) {
+        empty = false;
+        const divUcak = document.createElement('div');
+        divUcak.innerHTML = `<img src="https://via.placeholder.com/32?text=%E2%9C%88%EF%B8%8F" alt="Uçak"> Uçak (x${ucakCount})`;
+        inventoryList.appendChild(divUcak);
+      }
+      if(kumarhaneCount > 0) {
+        empty = false;
+        const divKumar = document.createElement('div');
+        divKumar.innerHTML = `<img src="https://via.placeholder.com/32?text=%24" alt="Kumarhane"> Kumarhane (x${kumarhaneCount})`;
+        inventoryList.appendChild(divKumar);
+      }
+
+      if(empty) {
+        inventoryList.innerHTML = "<p>Envanteriniz boş!</p>";
+      }
+
+      document.getElementById('ceteUyeSayisi').innerText = ceteUyeSayisi;
+    }
+
+    /* ---------------------------
+       KUMARHANE MODALI AÇ/KAPAT
+       --------------------------- */
+    function toggleKumarhaneModal() {
+      const kumarhaneModal = document.getElementById('kumarhaneModal');
+      kumarhaneModal.classList.toggle('active');
+      document.getElementById('gambleResult').innerText = "";
+      document.getElementById('betAmount').value = "";
+    }
+
+    /* Kumarhane oyun fonksiyonu */
+    function playGamble() {
+      const betInput = document.getElementById('betAmount');
+      const gambleResult = document.getElementById('gambleResult');
+      const bet = parseInt(betInput.value);
+
+      if(isNaN(bet) || bet <= 0) {
+        gambleResult.innerText = "Geçerli bir bahis miktarı giriniz.";
+        return;
+      }
+      if(bet > money) {
+        gambleResult.innerText = "Yeterli bakiyeniz yok!";
+        return;
+      }
+
+      // %50 kazanma şansı
+      const chance = Math.random();
+      if(chance < 0.5) {
+        // Kazandı
+        money += bet;
+        gambleResult.innerText = `Kazandınız! Yeni bakiye: ${money} $`;
+      } else {
+        // Kaybetti
+        money -= bet;
+        gambleResult.innerText = `Kaybettiniz! Yeni bakiye: ${money} $`;
+      }
+      updateUI();
+    }
+
+    // İlk arayüz güncellemesi
+    updateUI();
   </script>
 </body>
 </html>
