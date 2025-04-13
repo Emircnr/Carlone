@@ -2,9 +2,9 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Omerta - Mafia Oyunu</title>
+  <title>Black Dolphine - Mafia Oyunu</title>
   <style>
-    /* Yüksek seviyede estetik görünüm için reset ve temel stiller */
+    /* Temel Sıfırlama ve Genel Stil */
     * {
       margin: 0;
       padding: 0;
@@ -13,67 +13,69 @@
     }
 
     body {
-      background: linear-gradient(120deg, #000000 0%, #2c2c2c 50%, #0d0d0d 100%);
-      color: #f5f5f5;
+      background: linear-gradient(120deg, #202020 0%, #141414 50%, #000000 100%);
+      color: #f1f1f1;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
     header {
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 1rem 2rem;
       position: sticky;
       top: 0;
-      z-index: 1000;
+      z-index: 999;
       box-shadow: 0 2px 5px rgba(0,0,0,0.5);
     }
 
-    header .logo {
+    /* Logo ve Üst Bilgiler */
+    .logo {
       font-size: 1.5rem;
       font-weight: bold;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       color: #ff4444;
+      text-transform: uppercase;
     }
 
-    header .money {
-      font-size: 1.1rem;
+    .money {
+      font-size: 1rem;
       background: #222;
       padding: 0.5rem 1rem;
       border-radius: 5px;
+      border: 1px solid #333;
     }
 
-    header .money span {
+    .money span {
       color: #ffcc00;
       margin-left: 5px;
       font-weight: bold;
     }
 
-    /* Ana içerik */
     main {
       flex: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      padding: 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
     }
 
-    h1, h2, h3 {
+    h1, h2, h3, h4, p {
       text-align: center;
       margin-bottom: 1rem;
     }
 
+    /* Buton stili */
     .btn {
       background: #ff4444;
       color: #fff;
       border: none;
-      padding: 0.75rem 1.5rem;
+      padding: 0.75rem 1.25rem;
       font-size: 1rem;
       border-radius: 5px;
       cursor: pointer;
@@ -84,7 +86,12 @@
       background: #cc0000;
     }
 
-    /* Seçim kartları */
+    /* Köy Seçimi */
+    .village-select {
+      margin-top: 1rem;
+    }
+
+    /* Rütbe seçim alanı */
     .rank-selection {
       display: flex;
       gap: 2rem;
@@ -115,7 +122,7 @@
     }
 
     .locked {
-      opacity: 0.5;
+      opacity: 0.4;
       position: relative;
     }
 
@@ -125,7 +132,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.8);
       padding: 0.5rem 1rem;
       border-radius: 5px;
       font-weight: bold;
@@ -133,11 +140,7 @@
       pointer-events: none;
     }
 
-    .hidden {
-      display: none !important;
-    }
-
-    /* Görev Gösterim Alanı */
+    /* Görev Alanı */
     .task-container {
       margin-top: 2rem;
       text-align: center;
@@ -172,19 +175,27 @@
       color: #50fa7b;
     }
 
-    /* Rozetlerim Butonu */
-    .badges-btn {
+    /* Sabit Butonlar - Rozetlerim, Market, Kumarhane */
+    .fixed-btn-group {
       position: fixed;
       bottom: 2rem;
       right: 2rem;
-      background: #0088ff;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: flex-end;
     }
 
-    .badges-btn:hover {
-      background: #006edc;
+    .fixed-btn-group .btn {
+      min-width: 130px;
+      text-align: center;
     }
 
-    /* Rozetlerim Sayfası (Modal) */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Modal Genel */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0;
@@ -211,6 +222,18 @@
       position: relative;
     }
 
+    .close-modal {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    /* Rozetlerim Modal İçeriği */
     .modal h2 {
       color: #ffcc00;
       margin-bottom: 1rem;
@@ -222,7 +245,7 @@
       margin: 1rem 0;
     }
 
-    .badge-row .badge-type {
+    .badge-type {
       text-align: center;
     }
 
@@ -249,47 +272,94 @@
       font-size: 2rem;
     }
 
-    .close-modal {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-size: 1.2rem;
-      cursor: pointer;
+    /* Dayanıklılık Bar */
+    .dayaniklik-container {
+      margin: 1rem auto;
+      width: 80%;
+      background: #444;
+      border-radius: 5px;
+      overflow: hidden;
+      height: 20px;
+      position: relative;
     }
+
+    .dayaniklik-bar {
+      height: 100%;
+      background: #00bfff;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Market Modal */
+    .market-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 5px;
+    }
+
+    .market-item button {
+      font-size: 0.9rem;
+      padding: 0.3rem 0.8rem;
+    }
+
+    /* Kumarhane Modal */
+    .kumarhane-input {
+      margin: 1rem 0;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .kumarhane-input input {
+      width: 100px;
+      padding: 0.3rem;
+      text-align: center;
+      border-radius: 5px;
+      border: 1px solid #999;
+    }
+
   </style>
 </head>
 <body>
-
 <header>
-  <div class="logo">OMERTA</div>
+  <div class="logo">Black Dolphine</div>
   <div class="money">Dolar: <span id="money">0</span></div>
 </header>
 
 <main>
-  <h1>Omerta Dünyasına Hoş Geldiniz</h1>
-  <p style="text-align:center; max-width:700px; margin: 1rem auto;">
-    Aşağıda yer alan <strong>Vakur</strong>, <strong>Hatip</strong> ve <strong>Baron</strong> kartlarından hangisini seçeceğinize karar vererek 
-    görevleri tamamlayın, rozet toplayın ve güç kazanın. 
-    <br><br>
-    <em>Not:</em> Baron seviyesi <strong>en az 2 rozet</strong> kazandıktan sonra açılır. Görev tamamlayınca 2 dakikalık bekleme süresi başlar. 
-    Süre dolduğunda bir sonraki görevi (veya istediğiniz rütbeyi) seçebilirsiniz.
-  </p>
+  <h1>Black Dolphine Mafya Dünyasına Hoş Geldiniz</h1>
+  <h4>Önce yaşadığın köyü seç, ardından rütbe kartlarından birini seçerek görevlere başla.</h4>
 
-  <!-- Rank Seçim Kartları -->
+  <!-- Köy Seçimi -->
+  <div class="village-select">
+    <label for="villageSelect"><strong>Köy Seçiniz:</strong> </label>
+    <select id="villageSelect">
+      <option value="Shuman">Shuman</option>
+      <option value="Avamur">Avamur</option>
+      <option value="Smak">Smak</option>
+      <option value="Cerdo">Cerdo</option>
+      <option value="Alizera">Alizera</option>
+    </select>
+  </div>
+
+  <!-- Rütbe Seçim Kartları -->
   <div class="rank-selection">
     <div class="card" id="cardVakur">
       <h2>Vakur</h2>
       <p>Mavi Rozet</p>
       <button class="btn" onclick="selectRank('Vakur')">Seç</button>
     </div>
+
     <div class="card" id="cardHatip">
       <h2>Hatip</h2>
       <p>Turuncu Rozet</p>
       <button class="btn" onclick="selectRank('Hatip')">Seç</button>
     </div>
+
     <div class="card locked" id="cardBaron">
       <h2>Baron</h2>
       <p>Kırmızı Rozet</p>
@@ -297,7 +367,7 @@
     </div>
   </div>
 
-  <!-- Görev Gösterim Alanı -->
+  <!-- Görev Alanı -->
   <div class="task-container" id="taskContainer">
     <h3 id="rankTitle"></h3>
     <div class="task-desc" id="taskDescription"></div>
@@ -307,8 +377,12 @@
 
 </main>
 
-<!-- Rozetlerim Butonu -->
-<button class="btn badges-btn" onclick="toggleBadgesModal()">Rozetlerim</button>
+<!-- Sabit Butonlar (sağ alt) -->
+<div class="fixed-btn-group">
+  <button class="btn" onclick="toggleBadgesModal()">Rozetlerim</button>
+  <button class="btn hidden" id="marketBtn" onclick="toggleMarketModal()">Market</button>
+  <button class="btn hidden" id="kumarhaneBtn" onclick="toggleKumarhaneModal()">Kumarhane</button>
+</div>
 
 <!-- Rozetlerim Modal -->
 <div class="modal-overlay" id="badgesModal">
@@ -319,23 +393,66 @@
       <div class="badge-type">
         <div class="badge-blue">⬤</div>
         <span id="blueBadgeCount">0</span>
-        <p style="margin-top:0.5rem;">Vakur Rozeti</p>
+        <p style="margin-top:0.5rem;">Vakur</p>
       </div>
       <div class="badge-type">
         <div class="badge-orange">⬤</div>
         <span id="orangeBadgeCount">0</span>
-        <p style="margin-top:0.5rem;">Hatip Rozeti</p>
+        <p style="margin-top:0.5rem;">Hatip</p>
       </div>
       <div class="badge-type">
         <div class="badge-red">⬤</div>
         <span id="redBadgeCount">0</span>
-        <p style="margin-top:0.5rem;">Baron Rozeti</p>
+        <p style="margin-top:0.5rem;">Baron</p>
       </div>
     </div>
-    <hr style="margin:1.5rem 0; border: 1px solid #444;">
-    <h3>Özellikler</h3>
-    <p><strong>Dayanıklılık (Vakur):</strong> <span id="dayaniklilik">0</span></p>
-    <p><strong>Nüfus (Hatip):</strong> <span id="nufus">0</span></p>
+    <hr style="margin:1rem 0; border: 1px solid #444;">
+    <h3>Dayanıklılık (Vakur)</h3>
+    <div class="dayaniklik-container">
+      <div class="dayaniklik-bar" id="dayaniklikBar"></div>
+    </div>
+    <h3>Nüfus (Hatip)</h3>
+    <p><span id="nufus">0</span></p>
+  </div>
+</div>
+
+<!-- Market Modal -->
+<div class="modal-overlay" id="marketModal">
+  <div class="modal">
+    <button class="close-modal" onclick="toggleMarketModal()">X</button>
+    <h2>Market</h2>
+    <p style="margin-bottom:1rem;">Baron seviyesinde satın alabileceğiniz eşya ve mülkler:</p>
+    
+    <div class="market-item">
+      <div>At (5000$)</div>
+      <button class="btn" onclick="buyItem('At', 5000)">Satın Al</button>
+    </div>
+    <div class="market-item">
+      <div>Uçak (4000$)</div>
+      <button class="btn" onclick="buyItem('Uçak', 4000)">Satın Al</button>
+    </div>
+    <div class="market-item">
+      <div>Kumarhane Kur (40000$)</div>
+      <button class="btn" onclick="buyItem('Kumarhane Kur', 40000)">Satın Al</button>
+    </div>
+    
+    <hr style="margin:1rem 0; border: 1px solid #444;">
+    <h4>Sahip Olduğunuz Eşyalar</h4>
+    <div id="inventoryList" style="min-height:40px;"></div>
+  </div>
+</div>
+
+<!-- Kumarhane Modal -->
+<div class="modal-overlay" id="kumarhaneModal">
+  <div class="modal">
+    <button class="close-modal" onclick="toggleKumarhaneModal()">X</button>
+    <h2>Kumarhane</h2>
+    <p>Şansınızı deneyin! %50 kazanma şansı.</p>
+    <div class="kumarhane-input">
+      <input type="number" id="betAmount" placeholder="Bahis ($)" />
+      <button class="btn" onclick="playGamble()">Oyna</button>
+    </div>
+    <p id="gambleResult"></p>
   </div>
 </div>
 
@@ -343,6 +460,7 @@
   // -----------------------------
   // Görev Listeleri
   // -----------------------------
+  // Vakur Görevleri (Örnek 10 tane)
   const vakurTasks = [
     "Aileye yardım yap",
     "Bir çocuğun eğitim masraflarını karşıla",
@@ -356,50 +474,55 @@
     "Halk sağlığı merkezinde gönüllü ol"
   ];
 
+  // Hatip Görevleri (Arabuluculuk, uzlaşı vb. 10 tane)
   const hatipTasks = [
-    "Topluluk önünde konuşma yap",
-    "Halk toplantısı düzenle",
-    "Mahalle sorunlarını dile getir",
-    "Kamu spotu yayınla",
-    "Yerel radyoda program yap",
-    "Siyasi kampanya yürüt",
-    "Halk meclisinde liderlik et",
-    "Bağış toplama etkinliği düzenle",
-    "STK ile işbirliği yap",
-    "Ulusal kanalda halka seslen"
+    "Aileleri barıştır",
+    "Sokak kavgalarını sona erdir",
+    "Mahallede arabuluculuk yap",
+    "Yerel yönetimle uzlaşı sağla",
+    "Toplumsal protestoyu yatıştır",
+    "Sorunlu gençleri ikna et",
+    "Uluslararası barış konferansı düzenle",
+    "STK ve kurumları uzlaştır",
+    "Büyük bir anlaşmazlığı çöz",
+    "Halk meclisini toplantıya çağır"
   ];
 
+  // Baron Görevleri (Kaçakçılık, uyuşturucu, vb. 10 tane)
   const baronTasks = [
-    "Karaborsa ticareti yap",
-    "Kaçakçılık ağı yönet",
-    "Yüksek meblağda bahis al",
-    "Rakip çeteye baskın düzenle",
-    "Piyasayı tefecilikle kontrol et",
-    "Yeraltı kulübü aç",
-    "Silah ticareti yap",
-    "Polis rüşvetini ayarla",
-    "Korkutma ve sindirme politikası yürüt",
-    "Büyük mafya anlaşması yap"
+    "Kaçakçılık yap",
+    "Uyuşturucu sat",
+    "Şehirde haraç topla",
+    "Gizli kumarhane işlet",
+    "Gümrük memurlarına rüşvet ver",
+    "Tedarik zinciri yönet",
+    "Yüksek meblağda yasa dışı bahis",
+    "Sahte pasaport dağıt",
+    "Uluslararası suç ağı kur",
+    "Polis muhbirini satın al"
   ];
 
   // -----------------------------
   // Değişkenler
   // -----------------------------
-  let currentRank = null;       // "Vakur", "Hatip" veya "Baron"
-  let vakurIndex = 0;           // Vakur görev hangi indexte
-  let hatipIndex = 0;           // Hatip görev hangi indexte
-  let baronIndex = 0;           // Baron görev hangi indexte
+  let currentRank = null;       // "Vakur", "Hatip", "Baron"
+  let vakurIndex = 0;           // vakurTasks index
+  let hatipIndex = 0;           // hatipTasks index
+  let baronIndex = 0;           // baronTasks index
 
   let blueBadgeCount = 0;       // Vakur rozeti
   let orangeBadgeCount = 0;     // Hatip rozeti
   let redBadgeCount = 0;        // Baron rozeti
-  let money = 0;                // Para
-  let dayaniklilik = 0;         // Vakur arttıkça
-  let nufus = 0;                // Hatip arttıkça
 
-  let isCooldown = false;       // 2 dk bekleme süresi aktif mi?
+  let money = 0;                // Para
+  let dayaniklilik = 0;         // Vakur dayanıklılık
+  let nufus = 0;                // Hatip nüfus
+
+  let isCooldown = false;       // 2 dk bekleme aktif mi?
   let cooldownTimer = null;     // setInterval referansı
-  let timeLeft = 120;           // 2 dakika = 120 saniye
+  let timeLeft = 120;           // 2 dakika = 120s
+
+  let inventory = [];           // Marketten alınan eşyalar
 
   // HTML Elemanları
   const taskContainer = document.getElementById('taskContainer');
@@ -410,12 +533,11 @@
   const timerValue = document.getElementById('timerValue');
 
   const cardBaron = document.getElementById('cardBaron');
-
-  // Rozet modal
-  const badgesModal = document.getElementById('badgesModal');
+  const marketBtn = document.getElementById('marketBtn');
+  const kumarhaneBtn = document.getElementById('kumarhaneBtn');
 
   // -----------------------------
-  // Rütbe Seçimi Fonksiyonu
+  // Rütbe Seçme Fonksiyonu
   // -----------------------------
   function selectRank(rank) {
     if(isCooldown) {
@@ -423,8 +545,7 @@
       return;
     }
 
-    // Baron kilidini kontrol et
-    // Baron için en az 2 rozet lazım (toplamda 2 rozet)
+    // Baron kilidi kontrolü (en az 2 rozet kazanmış olmak - mavi + turuncu + kırmızı)
     const totalBadges = blueBadgeCount + orangeBadgeCount + redBadgeCount;
     if(rank === "Baron" && totalBadges < 2) {
       alert("Baron seviyesi için en az 2 rozet kazanmalısınız!");
@@ -446,20 +567,22 @@
     if(currentRank === "Vakur") {
       rankTitle.innerText = "Vakur Görevi";
       taskDescription.innerText = vakurTasks[vakurIndex] 
-        ? vakurTasks[vakurIndex] 
+        ? vakurTasks[vakurIndex]
         : "Tüm Vakur görevlerini tamamladınız!";
       if(!vakurTasks[vakurIndex]) {
         completeTaskBtn.disabled = true;
       }
-    } else if(currentRank === "Hatip") {
+    } 
+    else if(currentRank === "Hatip") {
       rankTitle.innerText = "Hatip Görevi";
-      taskDescription.innerText = hatipTasks[hatipIndex] 
-        ? hatipTasks[hatipIndex] 
+      taskDescription.innerText = hatipTasks[hatipIndex]
+        ? hatipTasks[hatipIndex]
         : "Tüm Hatip görevlerini tamamladınız!";
       if(!hatipTasks[hatipIndex]) {
         completeTaskBtn.disabled = true;
       }
-    } else if(currentRank === "Baron") {
+    }
+    else if(currentRank === "Baron") {
       rankTitle.innerText = "Baron Görevi";
       taskDescription.innerText = baronTasks[baronIndex]
         ? baronTasks[baronIndex]
@@ -471,7 +594,7 @@
   }
 
   // -----------------------------
-  // Görevi Tamamla
+  // Görevi Tamamla Butonu
   // -----------------------------
   function completeTask() {
     let task = null;
@@ -479,37 +602,66 @@
     if(currentRank === "Vakur" && vakurTasks[vakurIndex]) {
       task = vakurTasks[vakurIndex];
       vakurIndex++;
-      // Rozet + Dayanıklılık
-      blueBadgeCount++;
-      dayaniklilik++;
-      updateBadgesUI();
-      alert(`Görevi tamamladınız! +1 Mavi Rozet (Vakur)`);
+      // Rastgele 1-3 arası rozet
+      let rozetKazanc = getRandomRozet();
+      blueBadgeCount += rozetKazanc;
+      dayaniklilik += rozetKazanc;
+      alert(`Görevi tamamladınız! +${rozetKazanc} Mavi Rozet (Vakur)`);
     }
     else if(currentRank === "Hatip" && hatipTasks[hatipIndex]) {
       task = hatipTasks[hatipIndex];
       hatipIndex++;
-      // Rozet + Nüfus
-      orangeBadgeCount++;
-      nufus++;
-      updateBadgesUI();
-      alert(`Görevi tamamladınız! +1 Turuncu Rozet (Hatip)`);
+      // Rastgele 1-3 arası rozet
+      let rozetKazanc = getRandomRozet();
+      orangeBadgeCount += rozetKazanc;
+      nufus += rozetKazanc;
+      alert(`Görevi tamamladınız! +${rozetKazanc} Turuncu Rozet (Hatip)`);
     }
     else if(currentRank === "Baron" && baronTasks[baronIndex]) {
       task = baronTasks[baronIndex];
       baronIndex++;
-      // Rozet + Para
-      redBadgeCount++;
-      money += 100;
-      updateBadgesUI();
-      updateMoneyUI();
-      alert(`Görevi tamamladınız! +1 Kırmızı Rozet (Baron) ve +100 Dolar`);
-    } else {
-      alert("Bu rütbeye ait görev kalmadı.");
+      // Rastgele 1-3 arası rozet
+      let rozetKazanc = getRandomRozet();
+      redBadgeCount += rozetKazanc;
+      // Para kazancı da rastgele (300-800)
+      let cashGain = getRandomMoney(300, 800);
+      money += cashGain;
+
+      // Baron kötü iş yaptıkça vakur rozeti 1 azalabilir (eğer varsa)
+      if(blueBadgeCount > 0) {
+        blueBadgeCount -= 1;
+        dayaniklilik = Math.max(dayaniklilik - 1, 0);
+        alert(`Görevi tamamladınız! +${rozetKazanc} Kırmızı Rozet, +${cashGain} Dolar. (Vakur rozeti -1)`);
+      } else {
+        alert(`Görevi tamamladınız! +${rozetKazanc} Kırmızı Rozet, +${cashGain} Dolar.`);
+      }
+    }
+    else {
+      alert("Bu rütbeye ait geçerli bir görev kalmadı.");
       return;
     }
 
-    // Görevi tamamladık, 2 dk bekleme süresi başlat
+    // Arayüz Güncellemeleri
+    updateBadgesUI();
+    updateMoneyUI();
+    checkBaronUnlock();
+
+    // Görev tamamlandı, 2 dk bekleme başlat
     startCooldown();
+  }
+
+  // -----------------------------
+  // Rastgele Rozet Kazancı (1-3)
+  // -----------------------------
+  function getRandomRozet() {
+    return Math.floor(Math.random() * 3) + 1; // 1,2 veya 3
+  }
+
+  // -----------------------------
+  // Rastgele Para (Baron Görevi)
+  // -----------------------------
+  function getRandomMoney(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
   // -----------------------------
@@ -530,53 +682,134 @@
         clearInterval(cooldownTimer);
         isCooldown = false;
         countdownTimer.style.display = "none";
-        // 2 Dakika sonra rütbe seçimi tekrar yapılabilir
         alert("Süre doldu! Yeni bir rütbe seçebilirsiniz.");
         taskContainer.classList.remove('active');
-        checkBaronUnlock();
       }
     }, 1000);
   }
 
   // -----------------------------
-  // Baron Kilidini Kontrol
+  // Baron Kilit Kontrol
   // -----------------------------
   function checkBaronUnlock() {
     const totalBadges = blueBadgeCount + orangeBadgeCount + redBadgeCount;
     if(totalBadges >= 2) {
-      // Baron kartını kilitten çıkar
       cardBaron.classList.remove('locked');
       cardBaron.querySelector('button').style.visibility = "visible";
+      // Market ve Kumarhane butonlarını da göster
+      marketBtn.classList.remove('hidden');
+      kumarhaneBtn.classList.remove('hidden');
     }
   }
 
   // -----------------------------
-  // Rozetler Arayüz Güncelleme
+  // Arayüz Güncelleme
   // -----------------------------
   function updateBadgesUI() {
     document.getElementById('blueBadgeCount').innerText = blueBadgeCount;
     document.getElementById('orangeBadgeCount').innerText = orangeBadgeCount;
     document.getElementById('redBadgeCount').innerText = redBadgeCount;
-
-    document.getElementById('dayaniklilik').innerText = dayaniklilik;
     document.getElementById('nufus').innerText = nufus;
+
+    // Dayanıklılık bar = (dayaniklilik * 10) px gibi ayarlayabiliriz
+    let barWidth = dayaniklilik * 10;
+    // isterseniz bir üst sınır (örneğin 300px) belirleyebilirsiniz
+    if(barWidth > 300) barWidth = 300;
+    document.getElementById('dayaniklikBar').style.width = barWidth + "px";
   }
 
-  // -----------------------------
-  // Para Güncelleme
-  // -----------------------------
   function updateMoneyUI() {
     document.getElementById('money').innerText = money;
   }
 
   // -----------------------------
-  // Rozetler Modal Aç/Kapat
+  // Rozet Modal Aç/Kapat
   // -----------------------------
   function toggleBadgesModal() {
+    const badgesModal = document.getElementById('badgesModal');
     badgesModal.classList.toggle('active');
   }
 
-</script>
+  // -----------------------------
+  // Market Modal Aç/Kapat
+  // -----------------------------
+  function toggleMarketModal() {
+    const marketModal = document.getElementById('marketModal');
+    marketModal.classList.toggle('active');
+    updateInventoryUI();
+  }
 
+  // -----------------------------
+  // Marketten Satın Al
+  // -----------------------------
+  function buyItem(itemName, price) {
+    if(money >= price) {
+      money -= price;
+      inventory.push(itemName);
+      alert(itemName + " satın alındı!");
+      updateMoneyUI();
+      updateInventoryUI();
+    } else {
+      alert("Yeterli paranız yok!");
+    }
+  }
+
+  // Envanteri (inventory) göster
+  function updateInventoryUI() {
+    const inventoryList = document.getElementById('inventoryList');
+    inventoryList.innerHTML = "";
+    if(inventory.length === 0) {
+      inventoryList.innerHTML = "<p>Hiç eşyanız yok.</p>";
+    } else {
+      inventory.forEach(item => {
+        const div = document.createElement('div');
+        div.textContent = "- " + item;
+        inventoryList.appendChild(div);
+      });
+    }
+  }
+
+  // -----------------------------
+  // Kumarhane Modal Aç/Kapat
+  // -----------------------------
+  function toggleKumarhaneModal() {
+    const kumarhaneModal = document.getElementById('kumarhaneModal');
+    kumarhaneModal.classList.toggle('active');
+    document.getElementById('gambleResult').innerText = "";
+    document.getElementById('betAmount').value = "";
+  }
+
+  // -----------------------------
+  // Kumar Oyun Fonksiyonu
+  // -----------------------------
+  function playGamble() {
+    const betInput = document.getElementById('betAmount');
+    const gambleResult = document.getElementById('gambleResult');
+
+    const bet = parseInt(betInput.value);
+    if(isNaN(bet) || bet <= 0) {
+      gambleResult.innerText = "Geçerli bir bahis giriniz.";
+      return;
+    }
+    if(bet > money) {
+      gambleResult.innerText = "Yeterli bakiyeniz yok!";
+      return;
+    }
+
+    // 50% şans kazanma
+    const chance = Math.random();
+    if(chance < 0.5) {
+      // Kazan
+      money += bet;  // ikiye katla = +bet, net +bet
+      gambleResult.innerText = `Kazandınız! Yeni bakiyeniz: ${money} $`;
+    } else {
+      // Kaybet
+      money -= bet;
+      gambleResult.innerText = `Kaybettiniz! Yeni bakiyeniz: ${money} $`;
+    }
+    updateMoneyUI();
+  }
+
+</script>
 </body>
 </html>
