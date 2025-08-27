@@ -24,6 +24,7 @@
   header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(180deg,var(--headerStart),var(--headerEnd));border-bottom:1px solid var(--border)}
   header h1{margin:0;font-size:18px}
   header .sub{color:var(--muted);font-size:12px}
+  header .rightBox{display:flex;gap:14px;align-items:center}
 
   .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;padding:12px 16px;background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
   .ctrl{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px}
@@ -41,14 +42,15 @@
   .chip button{all:unset;cursor:pointer;color:#4f79ff}
 
   .tableWrap{padding:14px 16px}
-  table{width:100%;border-collapse:separate;border-spacing:0 8px}
-  thead th{font-size:12px;color:var(--muted);text-align:left;padding:0 12px}
+  table{width:100%;border-collapse:separate;border-spacing:0 12px} /* bir tık daha büyük boşluk */
+  thead th{font-size:13px;color:var(--muted);text-align:left;padding:0 14px}
   tbody tr{background:var(--panel2);border:1px solid var(--border)}
-  tbody td{padding:12px;font-size:14px}
+  tbody td{padding:16px;font-size:16px} /* hücreler biraz büyütüldü */
   tbody tr td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
   tbody tr td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
   .mono{font-variant-numeric:tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
   .right{text-align:right}
+  .pctCell{font-size:18px;font-weight:700} /* fark yüzdesi biraz daha büyük */
   .muted{color:var(--muted)}
 </style>
 </head>
@@ -58,7 +60,10 @@
     <h1>Arbitraj Radarı — Paribu ⇄ Binance (TL)</h1>
     <div class="sub">USDT→TRY: <span id="usdtry" class="mono">—</span> · Son: <span id="last" class="mono">—</span></div>
   </div>
-  <div class="sub">İzlenen: <span id="cnt">0</span> · Hata: <span id="err">0</span></div>
+  <div class="rightBox">
+    <div class="sub">BTCUSDT: <span id="btc" class="mono">—</span></div>
+    <div class="sub">İzlenen: <span id="cnt">0</span> · Hata: <span id="err">0</span></div>
+  </div>
 </header>
 
 <section class="controls">
@@ -144,11 +149,12 @@ let timer = null, updating = false, errors = 0, usdtry = null;
 
 const elUsd = $('#usdtry'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#err'),
       elBody = $('#tbody'), elRngLbl = $('#rngLbl'), elRng = $('#rng'), elMin = $('#minPct'),
-      elThemeSel = $('#themeSel');
+      elThemeSel = $('#themeSel'), elBtc = $('#btc');
 
 /* ================== Ağ ================== */
 function paribuUrl(sym){ return `https://web.paribu.com/market/${sym.toLowerCase()}_tl/orderbook`; }
-function binanceUrl(sym){ return `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`; }
+function binanceBook(sym){ return `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`; }
+const BINANCE_BTC_PRICE = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
 
 async function jget(url){
   const res = await fetch(url, {cache:'no-store'});
@@ -166,9 +172,22 @@ function parseParibu(payload){
 /* ================== Mantık (PyQt5 ile birebir) ================== */
 async function tick(){
   if(updating) return;
-  if(watched.size===0){ elBody.innerHTML=''; return; }
   updating = true;
   try{
+    // Üst kısım: Binance BTCUSDT canlı fiyat
+    try{
+      const btc = await jget(BINANCE_BTC_PRICE);
+      const p = parseFloat(btc.price);
+      if(isFinite(p)) elBtc.textContent = p.toFixed(2);
+    }catch(e){ /* ignore */ }
+
+    // İzlenecek coin yoksa yalnızca header göstergelerini güncel tut
+    if(watched.size===0){
+      elLast.textContent = nowStr();
+      updating = false;
+      return;
+    }
+
     // USDTTL (Paribu) — Binance fiyatlarını TL'ye çevirmek için
     try{
       const usdt = await jget(paribuUrl('usdt'));
@@ -182,7 +201,7 @@ async function tick(){
       const pJson = await jget(paribuUrl(sym));
       const pBest = parseParibu(pJson.payload);
 
-      const bJson = await jget(binanceUrl(sym));
+      const bJson = await jget(binanceBook(sym));
       const bBidUSDT = parseFloat(bJson.bidPrice);
       const bAskUSDT = parseFloat(bJson.askPrice);
 
@@ -248,7 +267,7 @@ function draw(rows){
     tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange'; // PyQt5 renklendirme
     tr.appendChild(tdH);
 
-    const tdP = document.createElement('td'); tdP.className='right mono';
+    const tdP = document.createElement('td'); tdP.className='right mono pctCell';
     tdP.textContent = `%${isFinite(r.pct)? r.pct.toFixed(3) : '—'}`;
     tr.appendChild(tdP);
 
@@ -323,13 +342,10 @@ elThemeSel.addEventListener('change', (e)=> applyTheme(e.target.value));
 
 /* ================== Başlat (kalıcı ayarları yükle) ================== */
 (function initFromStorage(){
-  // tema
   applyTheme(themeMode);
-  // min % eşiği ve slider UI
   elMin.value = isFinite(minPctFilter)? minPctFilter : 0.00;
   renderChips();
   schedule(isFinite(refreshMs) ? refreshMs : 1000);
-  // ilk last label
   elLast.textContent = nowStr();
 })();
 setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
