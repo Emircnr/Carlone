@@ -1,38 +1,49 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="theme-dark">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Arbitraj Radarı — Paribu ⇄ Binance (TL)</title>
 <style>
-  :root{
+  /* ===== Temalar: değişkenler ===== */
+  .theme-dark{
     --bg:#0b1220; --panel:#111a2b; --panel2:#0f1626; --text:#e6edf6;
-    --muted:#9fb0ca; --accent:#60a5fa;
+    --muted:#9fb0ca; --accent:#60a5fa; --border:#17243e;
+    --headerStart:#0e172a; --headerEnd:#0b1220;
+    --chipBg:#1a243e; --chipBorder:#2a3d64;
   }
+  .theme-light{
+    --bg:#ffffff; --panel:#f3f6fb; --panel2:#ffffff; --text:#0b1220;
+    --muted:#4a5568; --accent:#2563eb; --border:#d7deea;
+    --headerStart:#eaf1ff; --headerEnd:#ffffff;
+    --chipBg:#eef3ff; --chipBorder:#c8d6f5;
+  }
+
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-  header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(180deg,#0e172a,#0b1220)}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(180deg,var(--headerStart),var(--headerEnd));border-bottom:1px solid var(--border)}
   header h1{margin:0;font-size:18px}
   header .sub{color:var(--muted);font-size:12px}
 
-  .controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:12px 16px;background:var(--panel);border-top:1px solid #0f1a33;border-bottom:1px solid #0f1a33}
-  .ctrl{background:var(--panel2);border:1px solid #16243d;border-radius:12px;padding:10px}
+  .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;padding:12px 16px;background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .ctrl{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px}
   .ctrl label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
   .row{display:flex;gap:8px;align-items:center}
-  input[type="text"], input[type="number"]{
-    width:100%;background:#0c1426;border:1px solid #203454;color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;outline:none
+  input[type="text"], input[type="number"], select{
+    width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:10px 12px;font-size:14px;outline:none
   }
   input[type="range"]{width:100%}
   .btn{background:var(--accent);color:#091220;border:none;border-radius:10px;padding:10px 12px;font-weight:600;cursor:pointer}
-  .ghost{background:#1a2642;color:var(--text);border:1px solid #2a3d64}
+  .ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-  .chip{display:inline-flex;gap:6px;align-items:center;background:#1a243e;border:1px solid #2a3d64;border-radius:999px;padding:5px 10px;font-size:12px}
-  .chip button{all:unset;cursor:pointer;color:#9ec0ff}
+  .chip{display:inline-flex;gap:6px;align-items:center;background:var(--chipBg);border:1px solid var(--chipBorder);border-radius:999px;padding:5px 10px;font-size:12px}
+  .chip button{all:unset;cursor:pointer;color:#4f79ff}
 
   .tableWrap{padding:14px 16px}
   table{width:100%;border-collapse:separate;border-spacing:0 8px}
-  thead th{font-size:12px;color:#9fb0ca;text-align:left;padding:0 12px}
-  tbody tr{background:var(--panel2);border:1px solid #17243e}
+  thead th{font-size:12px;color:var(--muted);text-align:left;padding:0 12px}
+  tbody tr{background:var(--panel2);border:1px solid var(--border)}
   tbody td{padding:12px;font-size:14px}
   tbody tr td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
   tbody tr td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
@@ -77,6 +88,17 @@
     </div>
     <div class="muted" style="font-size:12px;margin-top:6px">Bu eşiği aşmayan satırlar listelenmez.</div>
   </div>
+
+  <div class="ctrl">
+    <label>Tema</label>
+    <div class="row">
+      <select id="themeSel">
+        <option value="dark">Koyu</option>
+        <option value="light">Açık</option>
+      </select>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">Arka planı beyaz yapmak için “Açık” temayı seç.</div>
+  </div>
 </section>
 
 <section class="tableWrap">
@@ -116,11 +138,13 @@ function nowStr(){ return new Date().toLocaleTimeString(); }
 let watched = new Set(LS.get('arbi:watched', [])); // kalıcı
 let refreshMs = Number(LS.get('arbi:interval', 1000)); // kalıcı
 let minPctFilter = Number(LS.get('arbi:minpct', 0.00)); // kalıcı
+let themeMode = LS.get('arbi:theme', 'dark'); // 'dark' | 'light'
 
 let timer = null, updating = false, errors = 0, usdtry = null;
 
 const elUsd = $('#usdtry'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#err'),
-      elBody = $('#tbody'), elRngLbl = $('#rngLbl'), elRng = $('#rng'), elMin = $('#minPct');
+      elBody = $('#tbody'), elRngLbl = $('#rngLbl'), elRng = $('#rng'), elMin = $('#minPct'),
+      elThemeSel = $('#themeSel');
 
 /* ================== Ağ ================== */
 function paribuUrl(sym){ return `https://web.paribu.com/market/${sym.toLowerCase()}_tl/orderbook`; }
@@ -234,6 +258,15 @@ function draw(rows){
   elBody.appendChild(frag);
 }
 
+/* ================== Tema ================== */
+function applyTheme(mode){
+  const html = document.documentElement;
+  html.classList.remove('theme-dark','theme-light');
+  html.classList.add(mode==='light' ? 'theme-light' : 'theme-dark');
+  elThemeSel.value = (mode==='light' ? 'light' : 'dark');
+  LS.set('arbi:theme', (mode==='light' ? 'light' : 'dark'));
+}
+
 /* ================== UI / Kontroller (kalıcı) ================== */
 function renderChips(){
   const wrap = $('#chips'); wrap.innerHTML='';
@@ -286,17 +319,19 @@ elMin.addEventListener('input', e=>{
   LS.set('arbi:minpct', minPctFilter); // kalıcı
 });
 
+elThemeSel.addEventListener('change', (e)=> applyTheme(e.target.value));
+
 /* ================== Başlat (kalıcı ayarları yükle) ================== */
 (function initFromStorage(){
-  // min % eşiği ve slider UI'yı yükle
+  // tema
+  applyTheme(themeMode);
+  // min % eşiği ve slider UI
   elMin.value = isFinite(minPctFilter)? minPctFilter : 0.00;
   renderChips();
   schedule(isFinite(refreshMs) ? refreshMs : 1000);
   // ilk last label
   elLast.textContent = nowStr();
 })();
-
-// watched boşsa sürekli boş güncelleme notu
 setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
 </script>
 </body>
