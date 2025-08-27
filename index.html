@@ -28,20 +28,16 @@
   header .sub{color:var(--muted);font-size:12px}
   header .rightBox{display:flex;gap:14px;align-items:center}
 
-  /* En Yüksek Fark kartı */
-  .hiWrap{padding:12px 16px}
+  /* En Yüksek Fark (sade satır) */
+  .hiWrap{padding:10px 16px}
   .hidden{display:none}
-  .hiCard{
-    display:flex;flex-wrap:wrap;gap:14px;align-items:baseline;
+  .hiLine{
+    font-size:22px;font-weight:800;letter-spacing:.2px;
     background:var(--panel2);border:1px solid var(--border);
-    border-left:6px solid #22c55e;border-radius:14px;padding:16px 18px
+    border-left:6px solid #22c55e;border-radius:14px;padding:12px 16px
   }
-  .hiCoin{font-size:24px;font-weight:800;letter-spacing:.2px}
-  .hiAct{background:var(--greenBg);border:1px solid var(--greenBd);color:var(--greenTx);
-    border-radius:999px;padding:6px 12px;font-weight:800;font-size:16px}
-  .hiPrice{font-size:20px;font-weight:700}
-  .hiPct{font-size:20px;font-weight:800}
-  .spacer{flex:1}
+  .hiGreen{background:var(--greenBg);border:1px solid var(--greenBd);color:var(--greenTx);
+    border-radius:999px;padding:4px 10px;margin:0 8px;font-weight:800;font-size:16px}
 
   .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;padding:12px 16px;background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
   .ctrl{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px}
@@ -66,9 +62,9 @@
   tbody tr td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
   tbody tr td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
   .mono{font-variant-numeric:tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
-  .right{text-align:right}
-  .pctCell{font-size:18px;font-weight:700}
   .muted{color:var(--muted)}
+  .coinCell{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .pctBadge{font-weight:800;border:1px solid var(--border);padding:4px 8px;border-radius:8px}
 </style>
 </head>
 <body>
@@ -84,14 +80,13 @@
   </div>
 </header>
 
-<!-- EN YÜKSEK FARK (yalnızca Paribu bilgisi) -->
+<!-- EN YÜKSEK FARK — sade metin -->
 <section id="hiWrap" class="hiWrap">
-  <div id="hiCard" class="hiCard">
-    <div class="hiCoin" id="hiCoin">—</div>
-    <span class="hiAct" id="hiAct">—</span>
-    <span class="hiPrice mono" id="hiPrice">—</span>
-    <span class="hiPct mono" id="hiPct">—</span>
-    <span class="spacer"></span>
+  <div class="hiLine">
+    <span id="hiCoin">—</span>
+    <span class="hiGreen" id="hiAct">PARİBU • —</span>
+    <span id="hiPrice" class="mono">—</span>
+    <span id="hiPct" class="mono">—</span>
   </div>
 </section>
 
@@ -139,10 +134,9 @@
   <table>
     <thead>
       <tr>
-        <th>Coin</th>
+        <th>Coin / %</th>
         <th>AL</th>
         <th>SAT</th>
-        <th class="right">Fark / Yüzde</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -150,7 +144,7 @@
 </section>
 
 <script>
-/* ============== Yardımcılar + Kalıcı Hafıza (localStorage) ============== */
+/* ====== Yardımcılar + Kalıcı Hafıza ====== */
 const $ = s => document.querySelector(s);
 const LS = {
   get(key, def){ try{ const v = localStorage.getItem(key); return v==null ? def : JSON.parse(v); }catch{ return def; } },
@@ -163,15 +157,23 @@ function norm(sym){
     .replaceAll('İ','I').replaceAll('İ','I')
     .replaceAll('Ç','C').replaceAll('Ğ','G').replaceAll('Ö','O').replaceAll('Ş','S').replaceAll('Ü','U');
 }
-function fmt(n, d=4){ return (n==null||!isFinite(n)) ? '—' : Number(n).toFixed(d); }
-function nowStr(){ return new Date().toLocaleTimeString(); }
+function fmtFixedTR(n, d=2){
+  if(n==null || !isFinite(n)) return '—';
+  return Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function fmtPctTR(n, d=2){
+  if(n==null || !isFinite(n)) return '—';
+  return '%'+Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function fmt4(n){ return (n==null||!isFinite(n)) ? '—' : Number(n).toFixed(4); }
+function nowStr(){ return new Date().toLocaleTimeString('tr-TR'); }
 
-/* ================== Durum ================== */
-let watched = new Set(LS.get('arbi:watched', []));       // kalıcı
-let refreshMs = Number(LS.get('arbi:interval', 1000));    // kalıcı
-let minPctFilter = Number(LS.get('arbi:minpct', 0.00));   // kalıcı
-let themeMode = LS.get('arbi:theme', 'dark');             // 'dark' | 'light'
-let hiOn = LS.get('arbi:hiOn', true);                     // En Yüksek Fark kartı
+/* ====== Durum ====== */
+let watched = new Set(LS.get('arbi:watched', []));
+let refreshMs = Number(LS.get('arbi:interval', 1000));
+let minPctFilter = Number(LS.get('arbi:minpct', 0.00));
+let themeMode = LS.get('arbi:theme', 'dark');
+let hiOn = LS.get('arbi:hiOn', true);
 
 let timer = null, updating = false, errors = 0, usdtry = null;
 
@@ -181,7 +183,7 @@ const elUsd = $('#usdtry'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#
       elHiWrap = $('#hiWrap'), elHiCoin = $('#hiCoin'), elHiAct = $('#hiAct'),
       elHiPrice = $('#hiPrice'), elHiPct = $('#hiPct'), elHiToggle = $('#toggleHi');
 
-/* ================== Ağ ================== */
+/* ====== Ağ ====== */
 function paribuUrl(sym){ return `https://web.paribu.com/market/${sym.toLowerCase()}_tl/orderbook`; }
 function binanceBook(sym){ return `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`; }
 const BINANCE_BTC_PRICE = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
@@ -196,36 +198,36 @@ function parseParibu(payload){
   const bids = Object.keys(payload.buy).map(parseFloat).filter(x=>!isNaN(x));
   const asks = Object.keys(payload.sell).map(parseFloat).filter(x=>!isNaN(x));
   if(!bids.length || !asks.length) return {bid:NaN, ask:NaN};
-  return { bid: Math.max(...bids), ask: Math.min(...asks) }; // PyQt5 ile aynı
+  return { bid: Math.max(...bids), ask: Math.min(...asks) };
 }
 
-/* ================== Mantık (PyQt5 ile birebir) ================== */
+/* ====== Mantık (PyQt5 ile birebir) ====== */
 async function tick(){
   if(updating) return;
   updating = true;
   try{
-    // Header: Binance BTCUSDT canlı fiyat
+    // BTC canlı
     try{
       const btc = await jget(BINANCE_BTC_PRICE);
       const p = parseFloat(btc.price);
-      if(isFinite(p)) elBtc.textContent = p.toFixed(2);
-    }catch(e){ /* ignore */ }
+      if(isFinite(p)) elBtc.textContent = fmtFixedTR(p, 2);
+    }catch(e){}
 
     if(watched.size===0){
       elBody.innerHTML = '';
-      if(hiOn){ elHiCoin.textContent='—'; elHiAct.textContent='—'; elHiPrice.textContent='—'; elHiPct.textContent='—'; }
+      updateHighlight([]);
       elLast.textContent = nowStr();
       updating = false;
       return;
     }
 
-    // USDT/TRY (Paribu bid)
+    // USD/TRY (Paribu bid)
     try{
       const usdt = await jget(paribuUrl('usdt'));
       const best = parseParibu(usdt.payload);
       if(isFinite(best.bid)) usdtry = best.bid;
-      elUsd.textContent = fmt(usdtry, 4);
-    }catch(e){ /* önceki usdtry kalır */ }
+      elUsd.textContent = fmtFixedTR(usdtry, 4);
+    }catch(e){}
 
     const syms = Array.from(watched);
     const jobs = syms.map(async sym=>{
@@ -244,7 +246,7 @@ async function tick(){
       const diff2 = bBidTL - pBest.ask; // Paribu'dan al, Binance'de sat
 
       let show=false, low=0, high=0, pct=0, lowSrc='', highSrc='';
-      let paribuAction=null, paribuPrice=null; // üst kart için
+      let paribuAction=null, paribuPrice=null;
 
       if((diff1>0 || diff2>0) && isFinite(pBest.bid) && isFinite(pBest.ask) && isFinite(bBidTL) && isFinite(bAskTL)){
         show = true;
@@ -257,15 +259,12 @@ async function tick(){
           low = pBest.ask; high = bBidTL; lowSrc='Paribu'; highSrc='Binance';
           paribuAction = 'AL'; paribuPrice = pBest.ask;
         }
-      }else{
-        show = false;
       }
-
       return {sym, show, low, high, pct, lowSrc, highSrc, paribuAction, paribuPrice};
     });
 
     let rows = await Promise.all(jobs);
-    rows = rows.filter(r => r.show && isFinite(r.pct) && r.pct >= (Number(minPctFilter)||0));
+    rows = rows.filter(r => r && r.show && isFinite(r.pct) && r.pct >= (Number(minPctFilter)||0));
     rows.sort((a,b)=> b.pct - a.pct);
     draw(rows);
     updateHighlight(rows);
@@ -278,28 +277,31 @@ async function tick(){
   }
 }
 
+/* ====== Çizim ====== */
 function draw(rows){
   const frag = document.createDocumentFragment();
   rows.forEach(r=>{
     const tr = document.createElement('tr');
 
-    const tdC = document.createElement('td'); tdC.textContent = r.sym; tr.appendChild(tdC);
+    // Coin + % aynı hücre
+    const tdCoin = document.createElement('td');
+    tdCoin.className = 'coinCell';
+    const left = document.createElement('strong'); left.textContent = r.sym;
+    const right = document.createElement('span'); right.className = 'pctBadge mono'; right.textContent = fmtPctTR(r.pct, 2);
+    tdCoin.appendChild(left); tdCoin.appendChild(right);
+    tr.appendChild(tdCoin);
 
-    // AL (düşük fiyat kaynağına göre renk)
+    // AL (düşük fiyat)
     const tdL = document.createElement('td'); tdL.className='mono';
-    tdL.textContent = fmt(r.low,4);
-    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green'; // PyQt5 renklendirme
+    tdL.textContent = fmt4(r.low);
+    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green';
     tr.appendChild(tdL);
 
     // SAT (yüksek fiyat)
     const tdH = document.createElement('td'); tdH.className='mono';
-    tdH.textContent = fmt(r.high,4);
-    tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange'; // PyQt5 renklendirme
+    tdH.textContent = fmt4(r.high);
+    tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange';
     tr.appendChild(tdH);
-
-    const tdP = document.createElement('td'); tdP.className='right mono pctCell';
-    tdP.textContent = `%${isFinite(r.pct)? r.pct.toFixed(3) : '—'}`;
-    tr.appendChild(tdP);
 
     frag.appendChild(tr);
   });
@@ -307,37 +309,32 @@ function draw(rows){
   elBody.appendChild(frag);
 }
 
-/* ======= En Yüksek Fark Kartını güncelle (yalnız Paribu bilgisi) ======= */
+/* ====== En Yüksek Fark — sade satır (yalnız Paribu) ====== */
 function updateHighlight(rows){
   if(!hiOn){ elHiWrap.classList.add('hidden'); return; }
   elHiWrap.classList.remove('hidden');
   if(!rows.length){
-    elHiCoin.textContent='—'; elHiAct.textContent='—'; elHiPrice.textContent='—'; elHiPct.textContent='—';
+    elHiCoin.textContent='—'; elHiAct.textContent='PARİBU • —'; elHiPrice.textContent='—'; elHiPct.textContent='—';
     return;
   }
   const r = rows[0];
   elHiCoin.textContent = r.sym;
-  // Yalnız yeşil Paribu rozet ve Paribu fiyatı
-  if(r.paribuAction==='AL'){
-    elHiAct.textContent = 'Paribu • AL';
-    elHiPrice.textContent = `AL Fiyatı: ${fmt(r.paribuPrice,4)} TL`;
-  }else{
-    elHiAct.textContent = 'Paribu • SAT';
-    elHiPrice.textContent = `SAT Fiyatı: ${fmt(r.paribuPrice,4)} TL`;
-  }
-  elHiPct.textContent = `Fark: %${isFinite(r.pct)? r.pct.toFixed(3) : '—'}`;
+  const act = r.paribuAction === 'AL' ? 'AL' : 'SAT';
+  elHiAct.textContent = `PARİBU • ${act}`;
+  elHiPrice.textContent = `${fmtFixedTR(r.paribuPrice, 2)} TL`;
+  elHiPct.textContent = fmtPctTR(r.pct, 2);
 }
 
-/* ================== Tema ================== */
+/* ====== Tema ====== */
 function applyTheme(mode){
   const html = document.documentElement;
   html.classList.remove('theme-dark','theme-light');
   html.classList.add(mode==='light' ? 'theme-light' : 'theme-dark');
-  $('#themeSel').value = (mode==='light' ? 'light' : 'dark');
+  elThemeSel.value = (mode==='light' ? 'light' : 'dark');
   LS.set('arbi:theme', (mode==='light' ? 'light' : 'dark'));
 }
 
-/* ================== UI / Kontroller (kalıcı) ================== */
+/* ====== UI / Kontroller (kalıcı) ====== */
 function renderChips(){
   const wrap = $('#chips'); wrap.innerHTML='';
   Array.from(watched).sort().forEach(sym=>{
@@ -356,14 +353,14 @@ function renderChips(){
 
 function schedule(ms){
   refreshMs = Math.max(100, Math.min(4000, ms|0));
-  $('#rng').value = refreshMs;
-  $('#rngLbl').textContent = (refreshMs/1000).toFixed(1)+' sn';
+  elRng.value = refreshMs;
+  elRngLbl.textContent = (refreshMs/1000).toFixed(1)+' sn';
   LS.set('arbi:interval', refreshMs);
   if(timer) clearInterval(timer);
   timer = setInterval(tick, refreshMs);
 }
 
-/* === Eventler === */
+/* ====== Eventler ====== */
 $('#add').onclick = ()=>{
   const raw = $('#coinIn').value;
   const sym = norm(raw);
@@ -382,14 +379,14 @@ $('#clear').onclick = ()=>{
   renderChips(); elBody.innerHTML='';
 };
 
-$('#rng').addEventListener('input', e=> schedule(Number(e.target.value)));
+elRng.addEventListener('input', e=> schedule(Number(e.target.value)));
 
-$('#minPct').addEventListener('input', e=>{
+elMin.addEventListener('input', e=>{
   minPctFilter = Number(e.target.value)||0;
   LS.set('arbi:minpct', minPctFilter);
 });
 
-$('#themeSel').addEventListener('change', (e)=> applyTheme(e.target.value));
+elThemeSel.addEventListener('change', (e)=> applyTheme(e.target.value));
 
 elHiToggle.addEventListener('click', ()=>{
   hiOn = !hiOn;
@@ -398,17 +395,17 @@ elHiToggle.addEventListener('click', ()=>{
   if(!hiOn) elHiWrap.classList.add('hidden'); else elHiWrap.classList.remove('hidden');
 });
 
-/* ================== Başlat (kalıcı ayarları yükle) ================== */
+/* ====== Başlat ====== */
 (function initFromStorage(){
   applyTheme(themeMode);
-  $('#minPct').value = isFinite(minPctFilter)? minPctFilter : 0.00;
+  elMin.value = isFinite(minPctFilter)? minPctFilter : 0.00;
   elHiToggle.textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
   if(!hiOn) elHiWrap.classList.add('hidden');
   renderChips();
   schedule(isFinite(refreshMs) ? refreshMs : 1000);
-  $('#last').textContent = nowStr();
+  elLast.textContent = nowStr();
 })();
-setInterval(()=>{ if(watched.size===0) $('#last').textContent = nowStr(); }, 1000);
+setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
 </script>
 </body>
 </html>
