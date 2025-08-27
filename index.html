@@ -96,8 +96,13 @@
 </section>
 
 <script>
-/* ================== Yardımcılar ================== */
+/* ============== Yardımcılar + Kalıcı Hafıza (localStorage) ============== */
 const $ = s => document.querySelector(s);
+const LS = {
+  get(key, def){ try{ const v = localStorage.getItem(key); return v==null ? def : JSON.parse(v); }catch{ return def; } },
+  set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
+};
+
 function norm(sym){
   if(!sym) return '';
   return sym.trim().toUpperCase()
@@ -108,12 +113,14 @@ function fmt(n, d=4){ return (n==null||!isFinite(n)) ? '—' : Number(n).toFixed
 function nowStr(){ return new Date().toLocaleTimeString(); }
 
 /* ================== Durum ================== */
-let watched = new Set();               // sadece seçilen coinler
-let refreshMs = 1000;                  // kullanıcı ayarlı (0.1–4 sn)
-let minPctFilter = 0.00;               // yüzde eşiği
+let watched = new Set(LS.get('arbi:watched', [])); // kalıcı
+let refreshMs = Number(LS.get('arbi:interval', 1000)); // kalıcı
+let minPctFilter = Number(LS.get('arbi:minpct', 0.00)); // kalıcı
+
 let timer = null, updating = false, errors = 0, usdtry = null;
 
-const elUsd = $('#usdtry'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#err'), elBody = $('#tbody'), elRngLbl = $('#rngLbl');
+const elUsd = $('#usdtry'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#err'),
+      elBody = $('#tbody'), elRngLbl = $('#rngLbl'), elRng = $('#rng'), elMin = $('#minPct');
 
 /* ================== Ağ ================== */
 function paribuUrl(sym){ return `https://web.paribu.com/market/${sym.toLowerCase()}_tl/orderbook`; }
@@ -144,7 +151,7 @@ async function tick(){
       const best = parseParibu(usdt.payload);
       if(isFinite(best.bid)) usdtry = best.bid;
       elUsd.textContent = fmt(usdtry, 4);
-    }catch(e){ /* yoksa önceki usdtry kullanılabilir */ }
+    }catch(e){ /* önceki usdtry kullanılabilir */ }
 
     const syms = Array.from(watched);
     const jobs = syms.map(async sym=>{
@@ -155,7 +162,7 @@ async function tick(){
       const bBidUSDT = parseFloat(bJson.bidPrice);
       const bAskUSDT = parseFloat(bJson.askPrice);
 
-      // PyQt5'te: USDTTL varsa Binance TL'ye çevrilir, yoksa USDT kalır
+      // USDTTL varsa Binance TL'ye çevir, yoksa USDT kalır (PyQt5 davranışı)
       const mul = (usdtry!=null) ? usdtry : 1;
       const bBidTL = bBidUSDT * mul;
       const bAskTL = bAskUSDT * mul;
@@ -177,7 +184,7 @@ async function tick(){
           low = pBest.ask; high = bBidTL; lowSrc='Paribu'; highSrc='Binance';
         }
       }else{
-        show = false; // PyQt5 tabloda fırsat yoksa satır eklemiyor
+        show = false; // fırsat yoksa satır ekleme
       }
 
       return {sym, show, low, high, pct, lowSrc, highSrc};
@@ -205,11 +212,13 @@ function draw(rows){
 
     const tdC = document.createElement('td'); tdC.textContent = r.sym; tr.appendChild(tdC);
 
+    // AL (düşük fiyat kaynağına göre renk)
     const tdL = document.createElement('td'); tdL.className='mono';
     tdL.textContent = fmt(r.low,4);
     tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green'; // PyQt5 renklendirme
     tr.appendChild(tdL);
 
+    // SAT (yüksek fiyat)
     const tdH = document.createElement('td'); tdH.className='mono';
     tdH.textContent = fmt(r.high,4);
     tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange'; // PyQt5 renklendirme
@@ -225,14 +234,18 @@ function draw(rows){
   elBody.appendChild(frag);
 }
 
-/* ================== UI / Kontroller ================== */
+/* ================== UI / Kontroller (kalıcı) ================== */
 function renderChips(){
   const wrap = $('#chips'); wrap.innerHTML='';
   Array.from(watched).sort().forEach(sym=>{
     const d = document.createElement('div'); d.className='chip';
     d.innerHTML = `<span>${sym}</span>`;
     const b = document.createElement('button'); b.textContent='×';
-    b.onclick = ()=>{ watched.delete(sym); elCnt.textContent = watched.size; renderChips(); };
+    b.onclick = ()=>{
+      watched.delete(sym);
+      LS.set('arbi:watched', Array.from(watched)); // kalıcı
+      elCnt.textContent = watched.size; renderChips();
+    };
     d.appendChild(b); wrap.appendChild(d);
   });
   elCnt.textContent = watched.size;
@@ -240,26 +253,50 @@ function renderChips(){
 
 function schedule(ms){
   refreshMs = Math.max(100, Math.min(4000, ms|0));
-  $('#rng').value = refreshMs;
+  elRng.value = refreshMs;
   elRngLbl.textContent = (refreshMs/1000).toFixed(1)+' sn';
+  LS.set('arbi:interval', refreshMs); // kalıcı
   if(timer) clearInterval(timer);
   timer = setInterval(tick, refreshMs);
 }
 
+/* === Eventler === */
 $('#add').onclick = ()=>{
   const raw = $('#coinIn').value;
   const sym = norm(raw);
-  if(sym){ watched.add(sym); renderChips(); }
+  if(sym){
+    watched.add(sym);
+    LS.set('arbi:watched', Array.from(watched)); // kalıcı
+    renderChips();
+  }
   $('#coinIn').value='';
 };
 $('#coinIn').addEventListener('keydown',(e)=>{ if(e.key==='Enter') $('#add').click(); });
-$('#clear').onclick = ()=>{ watched.clear(); renderChips(); elBody.innerHTML=''; };
 
-$('#rng').addEventListener('input', e=> schedule(Number(e.target.value)));
-$('#minPct').addEventListener('input', e=>{ minPctFilter = Number(e.target.value)||0; });
+$('#clear').onclick = ()=>{
+  watched.clear();
+  LS.set('arbi:watched', []); // kalıcı
+  renderChips(); elBody.innerHTML='';
+};
 
-/* ================== Başlat ================== */
-schedule(1000); // varsayılan 1 sn
+elRng.addEventListener('input', e=> schedule(Number(e.target.value)));
+
+elMin.addEventListener('input', e=>{
+  minPctFilter = Number(e.target.value)||0;
+  LS.set('arbi:minpct', minPctFilter); // kalıcı
+});
+
+/* ================== Başlat (kalıcı ayarları yükle) ================== */
+(function initFromStorage(){
+  // min % eşiği ve slider UI'yı yükle
+  elMin.value = isFinite(minPctFilter)? minPctFilter : 0.00;
+  renderChips();
+  schedule(isFinite(refreshMs) ? refreshMs : 1000);
+  // ilk last label
+  elLast.textContent = nowStr();
+})();
+
+// watched boşsa sürekli boş güncelleme notu
 setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
 </script>
 </body>
