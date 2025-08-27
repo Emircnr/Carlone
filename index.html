@@ -84,8 +84,8 @@
     <thead>
       <tr>
         <th>Coin</th>
-        <th>Düşük Fiyat</th>
-        <th>Yüksek Fiyat</th>
+        <th>AL</th>
+        <th>SAT</th>
         <th class="right">Fark / Yüzde</th>
       </tr>
     </thead>
@@ -184,9 +184,9 @@ async function tick(){
     });
 
     let rows = await Promise.all(jobs);
-    // % eşiği uygula (PyQt5'te yoktu, burada isteğin üzerine eklendi; varsayılan 0.00 ile aynı davranır)
+    // % eşiği uygula
     rows = rows.filter(r => r.show && isFinite(r.pct) && r.pct >= minPctFilter);
-    // Sırala: yüzdeliğe göre azalan (PyQt5 ile aynı)
+    // Sırala: yüzdeliğe göre azalan
     rows.sort((a,b)=> b.pct - a.pct);
     draw(rows);
 
@@ -259,7 +259,7 @@ $('#rng').addEventListener('input', e=> schedule(Number(e.target.value)));
 $('#minPct').addEventListener('input', e=>{ minPctFilter = Number(e.target.value)||0; });
 
 /* ================== Başlat ================== */
-schedule(1000); // varsayılan 1 sn — PyQt5’teki 1sn UI periyoduna denk
+schedule(1000); // varsayılan 1 sn
 setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
 </script>
 </body>
