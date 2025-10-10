@@ -12,7 +12,6 @@
     --headerStart:#0e172a; --headerEnd:#0b1220;
     --chipBg:#1a243e; --chipBorder:#2a3d64;
     --greenBg:#0f2a1b; --greenBd:#184a2b; --greenTx:#b6f7c8;
-    --orangeBg:#2a1f0f; --orangeBd:#4a3a1b; --orangeTx:#fbbf24;
   }
   .theme-light{
     --bg:#ffffff; --panel:#f3f6fb; --panel2:#ffffff; --text:#0b1220;
@@ -20,9 +19,9 @@
     --headerStart:#eaf1ff; --headerEnd:#ffffff;
     --chipBg:#eef3ff; --chipBorder:#c8d6f5;
     --greenBg:#e9f8ef; --greenBd:#b9e5c8; --greenTx:#166534;
-    --orangeBg:#fef3c7; --orangeBd:#fbbf24; --orangeTx:#92400e;
   }
 
+  /* ===== KİŞİSELLEŞTİRME ile AYARLANAN DEĞİŞKENLER ===== */
   :root{
     --table-font:18px;
     --cell-pad-y:12px;
@@ -46,6 +45,7 @@
   .btn{background:var(--accent);color:#091220;border:none;border-radius:10px;padding:10px 12px;font-weight:600;cursor:pointer}
   .ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
 
+  /* En Yüksek Fark — sade tek satır */
   .hiWrap{padding:10px 16px}
   .hidden{display:none}
   .hiLine{
@@ -56,11 +56,12 @@
   .hiGreen{background:var(--greenBg);border:1px solid var(--greenBd);color:var(--greenTx);
     border-radius:999px;padding:4px 10px;font-weight:800}
 
+  /* Üst kontrol şeritleri */
   .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;padding:12px 16px;background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
   .ctrl{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px}
   .ctrl label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
   .row{display:flex;gap:8px;align-items:center}
-  input[type="text"], input[type="number"], input[type="password"], select{
+  input[type="text"], input[type="number"], select{
     width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
     border-radius:10px;padding:10px 12px;font-size:14px;outline:none
   }
@@ -70,6 +71,7 @@
   .chip{display:inline-flex;gap:6px;align-items:center;background:var(--chipBg);border:1px solid var(--chipBorder);border-radius:999px;padding:5px 10px;font-size:12px}
   .chip button{all:unset;cursor:pointer;color:#4f79ff}
 
+  /* TABLO — kişiselleştirilebilir büyüklük/mesafe/genişlik */
   .tableWrap{padding:12px 16px;max-width:var(--container-max);margin:0 auto}
   table{width:100%;border-collapse:separate;border-spacing:0 var(--row-gap);table-layout:fixed}
   thead th{font-size:calc(var(--table-font) - 4px);color:var(--muted);text-align:center;padding:0 8px}
@@ -84,6 +86,7 @@
   .coinSym{font-weight:800}
   .alCell,.satCell,.pctCell{text-align:center;font-weight:800}
 
+  /* ========== KİŞİSELLEŞTİR paneli ========== */
   .customWrap{padding:10px 16px}
   .customPanel{
     background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:14px;display:grid;gap:12px
@@ -94,12 +97,6 @@
   .kv{display:flex;align-items:center;gap:8px}
   .kv .val{font-size:12px;color:var(--muted);min-width:48px;text-align:right}
   .footerBtns{display:flex;gap:8px;justify-content:flex-end}
-
-  .apiWarn{background:var(--orangeBg);border:1px solid var(--orangeBd);color:var(--orangeTx);
-    border-radius:10px;padding:10px;font-size:12px;margin-top:6px}
-  .apiStatus{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
-  .apiStatus.ok{background:#22c55e;color:#000}
-  .apiStatus.err{background:#ef4444;color:#fff}
 </style>
 </head>
 <body>
@@ -109,7 +106,6 @@
     <div class="sub">
       <span id="usdBox">USDT→TRY: <span id="usdtry" class="mono">—</span></span>
       · Son: <span id="last" class="mono">—</span>
-      · API: <span id="apiStatus" class="apiStatus">—</span>
     </div>
   </div>
   <div class="rightBox">
@@ -120,8 +116,10 @@
   </div>
 </header>
 
+<!-- Highlight kartı için yerleşim noktaları -->
 <div id="anchorTop"></div>
 
+<!-- EN YÜKSEK FARK — sade metin: "ACM PARİBU AL 39,92 TL %0,23" -->
 <section id="hiWrap" class="hiWrap">
   <div class="hiLine">
     <span id="hiCoin">—</span>
@@ -133,19 +131,6 @@
 
 <section class="controls">
   <div class="ctrl">
-    <label>Paribu API Ayarları</label>
-    <div class="row">
-      <input id="apiKey" type="text" placeholder="Public API Key"/>
-    </div>
-    <div class="row" style="margin-top:6px">
-      <input id="apiSecret" type="password" placeholder="Secret API Key"/>
-    </div>
-    <div class="apiWarn">
-      ⚠️ API anahtarlarınız tarayıcıda saklanır. Güvenlik için sadece market data yetkili key kullanın.
-    </div>
-  </div>
-
-  <div class="ctrl">
     <label>Coin Ekle / Çıkar</label>
     <div class="row">
       <input id="coinIn" type="text" placeholder="Örn: ZIL, XAI, MINA"/>
@@ -156,12 +141,12 @@
   </div>
 
   <div class="ctrl">
-    <label>Yenileme Aralığı (0.5–5.0 sn)</label>
+    <label>Yenileme Aralığı (0.1–4.0 sn)</label>
     <div class="row">
-      <input id="rng" type="range" min="500" max="5000" step="100">
+      <input id="rng" type="range" min="100" max="4000" step="100">
       <div class="mono" id="rngLbl">—</div>
     </div>
-    <div class="muted" style="font-size:12px;margin-top:6px">API rate limit koruması için minimum 0.5 saniye.</div>
+    <div class="muted" style="font-size:12px;margin-top:6px">PyQt5 mantığı korunur; sadece periyot ayarlanır.</div>
   </div>
 
   <div class="ctrl">
@@ -169,15 +154,22 @@
     <div class="row">
       <input id="minPct" type="number" step="0.01" min="0" value="0.00"/>
     </div>
-    <div class="row" style="margin-top:6px">
+    <div class="muted" style="font-size:12px;margin-top:6px">Bu eşiği aşmayan satırlar listelenmez.</div>
+  </div>
+
+  <div class="ctrl">
+    <label>Tema</label>
+    <div class="row">
       <select id="themeSel">
-        <option value="dark">Koyu Tema</option>
-        <option value="light">Açık Tema</option>
+        <option value="dark">Koyu</option>
+        <option value="light">Açık</option>
       </select>
     </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">Arka planı beyaz yapmak için “Açık” temayı seç.</div>
   </div>
 </section>
 
+<!-- KİŞİSELLEŞTİR paneli (aç/kapa) -->
 <section id="customWrap" class="customWrap hidden">
   <div class="customPanel">
     <div class="grid3">
@@ -260,7 +252,7 @@
 
     <div class="grid3">
       <label class="kv" style="gap:6px"><input id="ui_showBTC" type="checkbox"> BTC Fiyatını Göster</label>
-      <label class="kv" style="gap:6px"><input id="ui_showUSDT" type="checkbox" checked> USDT→TRY'yi Göster</label>
+      <label class="kv" style="gap:6px"><input id="ui_showUSDT" type="checkbox" checked> USDT→TRY’yi Göster</label>
       <div></div>
     </div>
 
@@ -270,6 +262,7 @@
   </div>
 </section>
 
+<!-- Kontrollerin altına yerleştirme için kanca -->
 <div id="anchorAfterControls"></div>
 
 <section class="tableWrap">
@@ -292,9 +285,11 @@
   </table>
 </section>
 
+<!-- Tablonun altına yerleştirme için kanca -->
 <div id="anchorAfterTable"></div>
 
 <script>
+/* ====== Yardımcılar + Kalıcı Hafıza ====== */
 const $ = s => document.querySelector(s);
 const LS = {
   get(key, def){ try{ const v = localStorage.getItem(key); return v==null ? def : JSON.parse(v); }catch{ return def; } },
@@ -303,8 +298,8 @@ const LS = {
 function norm(sym){
   if(!sym) return '';
   return sym.trim().toUpperCase()
-    .replaceAll('İ','I').replaceAll('Ç','C').replaceAll('Ğ','G')
-    .replaceAll('Ö','O').replaceAll('Ş','S').replaceAll('Ü','U');
+    .replaceAll('İ','I').replaceAll('İ','I')
+    .replaceAll('Ç','C').replaceAll('Ğ','G').replaceAll('Ö','O').replaceAll('Ş','S').replaceAll('Ü','U');
 }
 function fmtFixedTR(n, d=2){
   if(n==null || !isFinite(n)) return '—';
@@ -317,59 +312,12 @@ function fmtPctTR(n, d=2){
 function fmt4(n){ return (n==null||!isFinite(n)) ? '—' : Number(n).toFixed(4); }
 function nowStr(){ return new Date().toLocaleTimeString('tr-TR'); }
 
-/* ====== Paribu API İmzalama ====== */
-async function generateSignature(data, secret) {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
-  return btoa(String.fromCharCode(...new Uint8Array(signature)));
-}
-
-async function paribuApiRequest(endpoint, queryParams = '') {
-  const apiKey = $('#apiKey').value.trim();
-  const apiSecret = $('#apiSecret').value.trim();
-  
-  if (!apiKey || !apiSecret) {
-    throw new Error('API key ve secret gerekli');
-  }
-
-  const baseUrl = 'https://api.paribu.com';
-  const url = baseUrl + endpoint + (queryParams ? '?' + queryParams : '');
-  
-  const dataToSign = queryParams; // GET request için sadece query string
-  const signature = await generateSignature(dataToSign, apiSecret);
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': apiKey,
-      'X-Signature': signature,
-      'Content-Type': 'application/json'
-    },
-    cache: 'no-store'
-  });
-
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status}`);
-  }
-
-  return response.json();
-}
-
 /* ====== Durum ====== */
 let watched = new Set(LS.get('arbi:watched', []));
 let refreshMs = Number(LS.get('arbi:interval', 1000));
 let minPctFilter = Number(LS.get('arbi:minpct', 0.00));
 let themeMode = LS.get('arbi:theme', 'dark');
 let hiOn = LS.get('arbi:hiOn', true);
-let apiKeyStored = LS.get('arbi:apiKey', '');
-let apiSecretStored = LS.get('arbi:apiSecret', '');
 
 const UI_DEFAULTS = {
   tableFont: 18,
@@ -380,7 +328,7 @@ const UI_DEFAULTS = {
   maxW: 1100,
   col: { coin:28, al:27, sat:27, pct:18 },
   cardFont: 22,
-  hiPos: 'top',
+  hiPos: 'top',       // 'top' | 'afterControls' | 'afterTable' | 'hidden'
   showBTC: true,
   showUSDT: true
 };
@@ -394,54 +342,30 @@ const elUsd = $('#usdtry'), elUsdBox = $('#usdBox'), elLast = $('#last'), elCnt 
       elThemeSel = $('#themeSel'), elBtc = $('#btc'), elBtcBox = $('#btcBox'),
       elHiWrap = $('#hiWrap'), elHiCoin = $('#hiCoin'), elHiAct = $('#hiAct'),
       elHiPrice = $('#hiPrice'), elHiPct = $('#hiPct'), elHiToggle = $('#toggleHi'),
-      elCustomWrap = $('#customWrap'), elCustomToggle = $('#toggleCustom'),
-      elApiStatus = $('#apiStatus'), elApiKey = $('#apiKey'), elApiSecret = $('#apiSecret');
+      elCustomWrap = $('#customWrap'), elCustomToggle = $('#toggleCustom');
 
 /* ====== Ağ ====== */
-async function getParibuOrderbook(sym) {
-  // Paribu API v1 endpoint formatı
-  const endpoint = `/api/v1/market/${sym.toUpperCase()}_TL/orderbook`;
-  return await paribuApiRequest(endpoint);
-}
-
-function binanceBook(sym){ 
-  return `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`; 
-}
-
+function paribuUrl(sym){ return `https://web.paribu.com/market/${sym.toLowerCase()}_tl/orderbook`; }
+function binanceBook(sym){ return `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`; }
 const BINANCE_BTC_PRICE = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
-
 async function jget(url){
   const res = await fetch(url, {cache:'no-store'});
   if(!res.ok) throw new Error('HTTP '+res.status);
   return res.json();
 }
-
-function parseParibuApi(data){
-  // Yeni API formatı: { bids: [[price, amount], ...], asks: [[price, amount], ...] }
-  if(!data || !data.bids || !data.asks) return {bid:NaN, ask:NaN};
-  
-  const bids = data.bids.map(b => parseFloat(b[0])).filter(x => !isNaN(x));
-  const asks = data.asks.map(a => parseFloat(a[0])).filter(x => !isNaN(x));
-  
+function parseParibu(payload){
+  if(!payload || !payload.buy || !payload.sell) return {bid:NaN, ask:NaN};
+  const bids = Object.keys(payload.buy).map(parseFloat).filter(x=>!isNaN(x));
+  const asks = Object.keys(payload.sell).map(parseFloat).filter(x=>!isNaN(x));
   if(!bids.length || !asks.length) return {bid:NaN, ask:NaN};
-  return { bid: Math.max(...bids), ask: Math.min(...asks) };
+  return { bid: Math.max(...bids), ask: Math.min(...asks) }; // PyQt5 ile aynı
 }
 
-/* ====== Mantık ====== */
+/* ====== Mantık (PyQt5 ile birebir) ====== */
 async function tick(){
   if(updating) return;
   updating = true;
-  
   try{
-    // API key kontrolü
-    if(!$('#apiKey').value.trim() || !$('#apiSecret').value.trim()){
-      elApiStatus.textContent = 'API Key Yok';
-      elApiStatus.className = 'apiStatus err';
-      elBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px">Lütfen Paribu API anahtarlarınızı girin</td></tr>';
-      updating = false;
-      return;
-    }
-
     // BTC canlı (isteğe bağlı)
     if(UI.showBTC){
       try{
@@ -459,57 +383,46 @@ async function tick(){
       return;
     }
 
-    // USD/TRY (Paribu API)
+    // USD/TRY (Paribu bid) — isteğe bağlı gösterim
     try{
-      const usdt = await getParibuOrderbook('USDT');
-      const best = parseParibuApi(usdt);
+      const usdt = await jget(paribuUrl('usdt'));
+      const best = parseParibu(usdt.payload);
       if(isFinite(best.bid)) usdtry = best.bid;
       if(UI.showUSDT) elUsd.textContent = fmtFixedTR(usdtry, 4);
-      
-      elApiStatus.textContent = 'Bağlı';
-      elApiStatus.className = 'apiStatus ok';
-    }catch(e){
-      elApiStatus.textContent = 'API Hata';
-      elApiStatus.className = 'apiStatus err';
-      throw e;
-    }
+    }catch(e){}
 
     const syms = Array.from(watched);
     const jobs = syms.map(async sym=>{
-      try{
-        const pJson = await getParibuOrderbook(sym);
-        const pBest = parseParibuApi(pJson);
+      const pJson = await jget(paribuUrl(sym));
+      const pBest = parseParibu(pJson.payload);
 
-        const bJson = await jget(binanceBook(sym));
-        const bBidUSDT = parseFloat(bJson.bidPrice);
-        const bAskUSDT = parseFloat(bJson.askPrice);
+      const bJson = await jget(binanceBook(sym));
+      const bBidUSDT = parseFloat(bJson.bidPrice);
+      const bAskUSDT = parseFloat(bJson.askPrice);
 
-        const mul = (usdtry!=null) ? usdtry : 1;
-        const bBidTL = bBidUSDT * mul;
-        const bAskTL = bAskUSDT * mul;
+      const mul = (usdtry!=null) ? usdtry : 1;
+      const bBidTL = bBidUSDT * mul;
+      const bAskTL = bAskUSDT * mul;
 
-        const diff1 = pBest.bid - bAskTL;
-        const diff2 = bBidTL - pBest.ask;
+      const diff1 = pBest.bid - bAskTL; // Binance'den al, Paribu'da sat
+      const diff2 = bBidTL - pBest.ask; // Paribu'dan al, Binance'de sat
 
-        let show=false, low=0, high=0, pct=0, lowSrc='', highSrc='';
-        let paribuAction=null, paribuPrice=null;
+      let show=false, low=0, high=0, pct=0, lowSrc='', highSrc='';
+      let paribuAction=null, paribuPrice=null;
 
-        if((diff1>0 || diff2>0) && isFinite(pBest.bid) && isFinite(pBest.ask) && isFinite(bBidTL) && isFinite(bAskTL)){
-          show = true;
-          if(diff1 > diff2){
-            pct = (diff1 / bAskTL) * 100;
-            low = bAskTL; high = pBest.bid; lowSrc='Binance'; highSrc='Paribu';
-            paribuAction = 'SAT'; paribuPrice = pBest.bid;
-          }else{
-            pct = (diff2 / pBest.ask) * 100;
-            low = pBest.ask; high = bBidTL; lowSrc='Paribu'; highSrc='Binance';
-            paribuAction = 'AL'; paribuPrice = pBest.ask;
-          }
+      if((diff1>0 || diff2>0) && isFinite(pBest.bid) && isFinite(pBest.ask) && isFinite(bBidTL) && isFinite(bAskTL)){
+        show = true;
+        if(diff1 > diff2){
+          pct = (diff1 / bAskTL) * 100;
+          low = bAskTL; high = pBest.bid; lowSrc='Binance'; highSrc='Paribu';
+          paribuAction = 'SAT'; paribuPrice = pBest.bid;
+        }else{
+          pct = (diff2 / pBest.ask) * 100;
+          low = pBest.ask; high = bBidTL; lowSrc='Paribu'; highSrc='Binance';
+          paribuAction = 'AL'; paribuPrice = pBest.ask;
         }
-        return {sym, show, low, high, pct, lowSrc, highSrc, paribuAction, paribuPrice};
-      }catch(e){
-        return null;
       }
+      return {sym, show, low, high, pct, lowSrc, highSrc, paribuAction, paribuPrice};
     });
 
     let rows = await Promise.all(jobs);
@@ -521,7 +434,6 @@ async function tick(){
     elLast.textContent = nowStr();
   }catch(e){
     errors++; $('#err').textContent = errors;
-    console.error('Tick error:', e);
   }finally{
     updating = false;
   }
@@ -533,28 +445,27 @@ function draw(rows){
   rows.forEach(r=>{
     const tr = document.createElement('tr');
 
+    // Coin (solda, kalın)
     const tdCoin = document.createElement('td');
     tdCoin.className = 'coinCell';
-    const sym = document.createElement('span'); 
-    sym.className='coinSym'; 
-    sym.textContent = r.sym;
+    const sym = document.createElement('span'); sym.className='coinSym'; sym.textContent = r.sym;
     tdCoin.appendChild(sym);
     tr.appendChild(tdCoin);
 
-    const tdL = document.createElement('td'); 
-    tdL.className='mono alCell';
+    // AL (düşük fiyat)
+    const tdL = document.createElement('td'); tdL.className='mono alCell';
     tdL.textContent = fmt4(r.low);
-    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green';
+    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green'; // PyQt5 renklendirme
     tr.appendChild(tdL);
 
-    const tdH = document.createElement('td'); 
-    tdH.className='mono satCell';
+    // SAT (yüksek fiyat)
+    const tdH = document.createElement('td'); tdH.className='mono satCell';
     tdH.textContent = fmt4(r.high);
-    tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange';
+    tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange'; // PyQt5 renklendirme
     tr.appendChild(tdH);
 
-    const tdP = document.createElement('td'); 
-    tdP.className='mono pctCell';
+    // % Fark
+    const tdP = document.createElement('td'); tdP.className='mono pctCell';
     tdP.textContent = fmtPctTR(r.pct, 2);
     tr.appendChild(tdP);
 
@@ -564,19 +475,17 @@ function draw(rows){
   elBody.appendChild(frag);
 }
 
+/* ====== En Yüksek Fark (yalnız Paribu) ====== */
 function updateHighlight(rows){
-  if(!hiOn || UI.hiPos==='hidden'){ 
-    elHiWrap.classList.add('hidden'); 
-    return; 
-  }
+  // genel açık/kapalı butonu
+  if(!hiOn || UI.hiPos==='hidden'){ elHiWrap.classList.add('hidden'); return; }
   elHiWrap.classList.remove('hidden');
+
+  // konumlandırma
   placeHi(UI.hiPos);
 
   if(!rows.length){
-    elHiCoin.textContent='—'; 
-    elHiAct.textContent='PARİBU • —'; 
-    elHiPrice.textContent='—'; 
-    elHiPct.textContent='—';
+    elHiCoin.textContent='—'; elHiAct.textContent='PARİBU • —'; elHiPrice.textContent='—'; elHiPct.textContent='—';
     return;
   }
   const r = rows[0];
@@ -587,6 +496,7 @@ function updateHighlight(rows){
   elHiPct.textContent = fmtPctTR(r.pct, 2);
 }
 
+/* ====== Tema ====== */
 function applyTheme(mode){
   const html = document.documentElement;
   html.classList.remove('theme-dark','theme-light');
@@ -595,6 +505,7 @@ function applyTheme(mode){
   LS.set('arbi:theme', (mode==='light' ? 'light' : 'dark'));
 }
 
+/* ====== Kişiselleştirme ====== */
 function applyUI(u){
   document.documentElement.style.setProperty('--table-font', u.tableFont+'px');
   document.documentElement.style.setProperty('--cell-pad-y', u.padY+'px');
@@ -608,11 +519,14 @@ function applyUI(u){
   document.documentElement.style.setProperty('--col-pct',  (u.col.pct||18)+'%');
   document.documentElement.style.setProperty('--card-font', u.cardFont+'px');
 
+  // Görsel öğeler
   elBtcBox.style.display = u.showBTC ? '' : 'none';
   elUsdBox.style.display = u.showUSDT ? '' : 'none';
 
+  // Konum
   placeHi(u.hiPos);
 
+  // UI panel değer etiketleri
   $('#ui_tableFont_val').textContent = u.tableFont+'px';
   $('#ui_padY_val').textContent = u.padY+'px';
   $('#ui_padX_val').textContent = u.padX+'px';
@@ -621,6 +535,7 @@ function applyUI(u){
   $('#ui_maxW_val').textContent = u.maxW+'px';
   $('#ui_cardFont_val').textContent = u.cardFont+'px';
 
+  // Inputlara yansıt
   $('#ui_tableFont').value = u.tableFont;
   $('#ui_padY').value = u.padY;
   $('#ui_padX').value = u.padX;
@@ -636,9 +551,10 @@ function applyUI(u){
   $('#ui_showBTC').checked = !!u.showBTC;
   $('#ui_showUSDT').checked = !!u.showUSDT;
 
+  // Sütun toplamı göstergesi
   const sum = (+u.col.coin)+(+u.col.al)+(+u.col.sat)+(+u.col.pct);
   const ok = Math.round(sum)===100;
-  $('#ui_colSum').textContent = 'Toplam: '+sum.toFixed(0)+'% ' + (ok?'✓':'(100 olmalı)');
+  $('#ui_colSum').textContent = 'Toplam: '+sum.toFixed(0)+'% ' + (ok?'✓':'(100 olmalı — otomatik normalize edilir)');
 }
 
 function saveUI(){ LS.set('arbi:UI', UI); }
@@ -646,21 +562,23 @@ function normalizeCols(){
   let {coin,al,sat,pct} = UI.col;
   let sum = coin+al+sat+pct;
   if(sum<=0) { UI.col={coin:28,al:27,sat:27,pct:18}; return; }
+  // normalize to 100
   UI.col.coin = +(coin*100/sum).toFixed(0);
   UI.col.al   = +(al*100/sum).toFixed(0);
   UI.col.sat  = +(sat*100/sum).toFixed(0);
-  UI.col.pct  = 100 - UI.col.coin - UI.col.al - UI.col.sat;
+  UI.col.pct  = 100 - UI.col.coin - UI.col.al - UI.col.sat; // ensure sum=100
 }
 
 function placeHi(pos){
   const wrap = elHiWrap;
   if(pos==='hidden'){ wrap.classList.add('hidden'); return; }
   wrap.classList.remove('hidden');
-  if(pos==='top') $('#anchorTop').after(wrap);
+  if(pos==='top')        $('#anchorTop').after(wrap);
   else if(pos==='afterControls') $('#anchorAfterControls').after(wrap);
   else if(pos==='afterTable') $('#anchorAfterTable').after(wrap);
 }
 
+/* ====== UI / Kontroller (kalıcı) ====== */
 function renderChips(){
   const wrap = $('#chips'); wrap.innerHTML='';
   Array.from(watched).sort().forEach(sym=>{
@@ -678,7 +596,7 @@ function renderChips(){
 }
 
 function schedule(ms){
-  refreshMs = Math.max(500, Math.min(5000, ms|0));
+  refreshMs = Math.max(100, Math.min(4000, ms|0));
   elRng.value = refreshMs;
   elRngLbl.textContent = (refreshMs/1000).toFixed(1)+' sn';
   LS.set('arbi:interval', refreshMs);
@@ -686,10 +604,7 @@ function schedule(ms){
   timer = setInterval(tick, refreshMs);
 }
 
-/* ====== Event listeners ====== */
-elApiKey.addEventListener('input', ()=> LS.set('arbi:apiKey', elApiKey.value.trim()));
-elApiSecret.addEventListener('input', ()=> LS.set('arbi:apiSecret', elApiSecret.value.trim()));
-
+/* ====== Eventler ====== */
 $('#add').onclick = ()=>{
   const raw = $('#coinIn').value;
   const sym = norm(raw);
@@ -719,13 +634,14 @@ elHiToggle.addEventListener('click', ()=>{
   hiOn = !hiOn;
   LS.set('arbi:hiOn', hiOn);
   elHiToggle.textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
-  updateHighlight([]);
+  updateHighlight([]); // anlık uygula
 });
 elCustomToggle.addEventListener('click', ()=>{
   const open = elCustomWrap.classList.toggle('hidden');
   elCustomToggle.textContent = 'Kişiselleştir: ' + (open ? 'Kapalı' : 'Açık');
 });
 
+/* Kişiselleştirme inputları */
 $('#ui_tableFont').oninput = (e)=>{ UI.tableFont=+e.target.value; applyUI(UI); saveUI(); };
 $('#ui_padY').oninput = (e)=>{ UI.padY=+e.target.value; applyUI(UI); saveUI(); };
 $('#ui_padX').oninput = (e)=>{ UI.padX=+e.target.value; applyUI(UI); saveUI(); };
@@ -755,8 +671,6 @@ $('#ui_reset').onclick = ()=>{
 
 /* ====== Başlat ====== */
 (function initFromStorage(){
-  elApiKey.value = apiKeyStored || '';
-  elApiSecret.value = apiSecretStored || '';
   applyTheme(themeMode);
   renderChips();
   applyUI(UI);
