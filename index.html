@@ -97,12 +97,6 @@
   .kv{display:flex;align-items:center;gap:8px}
   .kv .val{font-size:12px;color:var(--muted);min-width:48px;text-align:right}
   .footerBtns{display:flex;gap:8px;justify-content:flex-end}
-
-  /* WebSocket Durum */
-  .wsStatus{font-size:11px;padding:4px 8px;border-radius:6px;font-weight:600}
-  .wsStatus.connected{background:#166534;color:#b6f7c8}
-  .wsStatus.disconnected{background:#7f1d1d;color:#fecaca}
-  .wsStatus.connecting{background:#854d0e;color:#fef08a}
 </style>
 </head>
 <body>
@@ -112,7 +106,6 @@
     <div class="sub">
       <span id="usdBox">USDT→TRY: <span id="usdtry" class="mono">—</span></span>
       · Son: <span id="last" class="mono">—</span>
-      · <span id="wsStatusBox" class="wsStatus disconnected">WS: Bağlantı Kesik</span>
     </div>
   </div>
   <div class="rightBox">
@@ -153,7 +146,7 @@
       <input id="rng" type="range" min="100" max="4000" step="100">
       <div class="mono" id="rngLbl">—</div>
     </div>
-    <div class="muted" style="font-size:12px;margin-top:6px">Stream verileri anlık güncellenir; bu sadece tablo çizim periyodudur.</div>
+    <div class="muted" style="font-size:12px;margin-top:6px">PyQt5 mantığı korunur; sadece periyot ayarlanır.</div>
   </div>
 
   <div class="ctrl">
@@ -172,7 +165,7 @@
         <option value="light">Açık</option>
       </select>
     </div>
-    <div class="muted" style="font-size:12px;margin-top:6px">Arka planı beyaz yapmak için "Açık" temayı seç.</div>
+    <div class="muted" style="font-size:12px;margin-top:6px">Arka planı beyaz yapmak için “Açık” temayı seç.</div>
   </div>
 </section>
 
@@ -259,7 +252,7 @@
 
     <div class="grid3">
       <label class="kv" style="gap:6px"><input id="ui_showBTC" type="checkbox"> BTC Fiyatını Göster</label>
-      <label class="kv" style="gap:6px"><input id="ui_showUSDT" type="checkbox" checked> USDT→TRY'yi Göster</label>
+      <label class="kv" style="gap:6px"><input id="ui_showUSDT" type="checkbox" checked> USDT→TRY’yi Göster</label>
       <div></div>
     </div>
 
@@ -305,7 +298,7 @@ const LS = {
 function norm(sym){
   if(!sym) return '';
   return sym.trim().toUpperCase()
-    .replaceAll('İ','I').replaceAll('İ','I')
+    .replaceAll('İ','I').replaceAll('İ','I')
     .replaceAll('Ç','C').replaceAll('Ğ','G').replaceAll('Ö','O').replaceAll('Ş','S').replaceAll('Ü','U');
 }
 function fmtFixedTR(n, d=2){
@@ -335,7 +328,7 @@ const UI_DEFAULTS = {
   maxW: 1100,
   col: { coin:28, al:27, sat:27, pct:18 },
   cardFont: 22,
-  hiPos: 'top',
+  hiPos: 'top',       // 'top' | 'afterControls' | 'afterTable' | 'hidden'
   showBTC: true,
   showUSDT: true
 };
@@ -349,192 +342,10 @@ const elUsd = $('#usdtry'), elUsdBox = $('#usdBox'), elLast = $('#last'), elCnt 
       elThemeSel = $('#themeSel'), elBtc = $('#btc'), elBtcBox = $('#btcBox'),
       elHiWrap = $('#hiWrap'), elHiCoin = $('#hiCoin'), elHiAct = $('#hiAct'),
       elHiPrice = $('#hiPrice'), elHiPct = $('#hiPct'), elHiToggle = $('#toggleHi'),
-      elCustomWrap = $('#customWrap'), elCustomToggle = $('#toggleCustom'),
-      elWsStatus = $('#wsStatusBox');
+      elCustomWrap = $('#customWrap'), elCustomToggle = $('#toggleCustom');
 
-/* ====== Paribu WebSocket Stream ====== */
-const PARIBU_WS_URL = 'wss://stream.paribu.com';
-let paribuWs = null;
-let paribuData = {}; // { 'btc': {bid, ask}, 'usdt': {bid, ask}, ... }
-let subscribedChannels = new Set();
-let wsReconnectTimer = null;
-let wsRequestId = 0;
-
-function updateWsStatus(status) {
-  elWsStatus.classList.remove('connected', 'disconnected', 'connecting');
-  if (status === 'connected') {
-    elWsStatus.classList.add('connected');
-    elWsStatus.textContent = 'WS: Bağlı';
-  } else if (status === 'connecting') {
-    elWsStatus.classList.add('connecting');
-    elWsStatus.textContent = 'WS: Bağlanıyor...';
-  } else {
-    elWsStatus.classList.add('disconnected');
-    elWsStatus.textContent = 'WS: Bağlantı Kesik';
-  }
-}
-
-function connectParibuWs() {
-  if (paribuWs && (paribuWs.readyState === WebSocket.OPEN || paribuWs.readyState === WebSocket.CONNECTING)) {
-    console.log('⚠️ WebSocket zaten bağlı veya bağlanıyor');
-    return;
-  }
-  
-  updateWsStatus('connecting');
-  console.log('🔌 WebSocket bağlantısı başlatılıyor:', PARIBU_WS_URL);
-  
-  try {
-    paribuWs = new WebSocket(PARIBU_WS_URL);
-  } catch (e) {
-    console.error('❌ WebSocket oluşturma hatası:', e);
-    updateWsStatus('disconnected');
-    scheduleReconnect();
-    return;
-  }
-  
-  paribuWs.onopen = () => {
-    console.log('✅ Paribu WebSocket bağlandı');
-    updateWsStatus('connected');
-    subscribedChannels.clear();
-    
-    // USDT/TRY için her zaman abone ol
-    subscribeToChannel('usdt');
-    
-    // İzlenen coinler için abone ol
-    watched.forEach(sym => subscribeToChannel(sym.toLowerCase()));
-  };
-  
-  paribuWs.onmessage = (event) => {
-    try {
-      const msg = JSON.parse(event.data);
-      
-      // Orderbook verisi
-      if (msg.e === 'orderbook' && msg.r) {
-        const symbol = msg.s.replace('_tl', '').toUpperCase();
-        const bids = msg.r.b || [];
-        const asks = msg.r.a || [];
-        
-        // Mevcut veriyi al veya oluştur
-        if (!paribuData[symbol]) {
-          paribuData[symbol] = { bid: 0, ask: Infinity, bids: {}, asks: {} };
-        }
-        const data = paribuData[symbol];
-        
-        // Bids güncelle (delta - sadece değişenler geliyor)
-        bids.forEach(([price, amount]) => {
-          const p = parseFloat(price);
-          const a = parseFloat(amount);
-          if (a > 0) {
-            data.bids[price] = { price: p, amount: a };
-          } else {
-            delete data.bids[price]; // amount 0 ise sil
-          }
-        });
-        
-        // Asks güncelle (delta)
-        asks.forEach(([price, amount]) => {
-          const p = parseFloat(price);
-          const a = parseFloat(amount);
-          if (a > 0) {
-            data.asks[price] = { price: p, amount: a };
-          } else {
-            delete data.asks[price];
-          }
-        });
-        
-        // En iyi bid ve ask'ı hesapla
-        const bidPrices = Object.values(data.bids).map(b => b.price);
-        const askPrices = Object.values(data.asks).map(a => a.price);
-        
-        data.bid = bidPrices.length > 0 ? Math.max(...bidPrices) : 0;
-        data.ask = askPrices.length > 0 ? Math.min(...askPrices) : Infinity;
-        
-        // USDT/TRY güncelle
-        if (symbol === 'USDT' && data.bid > 0) {
-          usdtry = data.bid;
-          if (UI.showUSDT) {
-            elUsd.textContent = fmtFixedTR(usdtry, 4);
-          }
-        }
-      }
-      
-      // Subscription response
-      if (msg.status) {
-        if (msg.status === 100) {
-          console.log('✅ Subscription başarılı:', msg.id);
-        } else if (msg.status === 201) {
-          console.warn('❌ Subscription hatası:', msg.id, msg.message);
-        }
-      }
-    } catch (e) {
-      console.error('WebSocket mesaj parse hatası:', e, event.data);
-    }
-  };
-  
-  paribuWs.onerror = (error) => {
-    console.error('WebSocket hatası:', error);
-    errors++;
-    elErr.textContent = errors;
-  };
-  
-  paribuWs.onclose = (event) => {
-    console.log('WebSocket kapandı:', event.code, event.reason);
-    updateWsStatus('disconnected');
-    subscribedChannels.clear();
-    scheduleReconnect();
-  };
-}
-
-function scheduleReconnect() {
-  if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
-  wsReconnectTimer = setTimeout(() => {
-    console.log('WebSocket yeniden bağlanıyor...');
-    connectParibuWs();
-  }, 3000);
-}
-
-function subscribeToChannel(sym) {
-  if (!paribuWs || paribuWs.readyState !== WebSocket.OPEN) {
-    console.warn('⚠️ WebSocket bağlı değil, subscribe yapılamıyor:', sym);
-    return;
-  }
-  
-  const channel = `orderbook:${sym.toLowerCase()}_tl@100ms`;
-  if (subscribedChannels.has(channel)) {
-    console.log('ℹ️ Zaten abone:', channel);
-    return;
-  }
-  
-  const msg = {
-    method: 'subscribe',
-    channels: [channel],
-    id: `req_${++wsRequestId}`
-  };
-  
-  console.log('📤 Subscribe gönderiliyor:', msg);
-  paribuWs.send(JSON.stringify(msg));
-  subscribedChannels.add(channel);
-}
-
-function unsubscribeFromChannel(sym) {
-  if (!paribuWs || paribuWs.readyState !== WebSocket.OPEN) return;
-  
-  const channel = `orderbook:${sym.toLowerCase()}_tl@100ms`;
-  if (!subscribedChannels.has(channel)) return;
-  
-  const msg = {
-    method: 'unsubscribe',
-    channels: [channel],
-    id: `req_${++wsRequestId}`
-  };
-  
-  paribuWs.send(JSON.stringify(msg));
-  subscribedChannels.delete(channel);
-  delete paribuData[sym.toUpperCase()];
-  console.log('Unsubscribed:', channel);
-}
-
-/* ====== Binance API (REST - değişmedi) ====== */
+/* ====== Ağ ====== */
+function paribuUrl(sym){ return `https://web.paribu.com/market/${sym.toLowerCase()}_tl/orderbook`; }
 function binanceBook(sym){ return `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`; }
 const BINANCE_BTC_PRICE = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
 async function jget(url){
@@ -542,12 +353,18 @@ async function jget(url){
   if(!res.ok) throw new Error('HTTP '+res.status);
   return res.json();
 }
+function parseParibu(payload){
+  if(!payload || !payload.buy || !payload.sell) return {bid:NaN, ask:NaN};
+  const bids = Object.keys(payload.buy).map(parseFloat).filter(x=>!isNaN(x));
+  const asks = Object.keys(payload.sell).map(parseFloat).filter(x=>!isNaN(x));
+  if(!bids.length || !asks.length) return {bid:NaN, ask:NaN};
+  return { bid: Math.max(...bids), ask: Math.min(...asks) }; // PyQt5 ile aynı
+}
 
-/* ====== Mantık (PyQt5 ile birebir - Paribu stream'den) ====== */
+/* ====== Mantık (PyQt5 ile birebir) ====== */
 async function tick(){
   if(updating) return;
   updating = true;
-  console.log('🔄 Tick başladı - İzlenen:', Array.from(watched), 'Paribu Cache:', Object.keys(paribuData));
   try{
     // BTC canlı (isteğe bağlı)
     if(UI.showBTC){
@@ -555,7 +372,7 @@ async function tick(){
         const btc = await jget(BINANCE_BTC_PRICE);
         const p = parseFloat(btc.price);
         if(isFinite(p)) elBtc.textContent = fmtFixedTR(p, 2);
-      }catch(e){ console.error('BTC fetch hatası:', e); }
+      }catch(e){}
     }
 
     if(watched.size===0){
@@ -566,48 +383,29 @@ async function tick(){
       return;
     }
 
-    // USD/TRY - stream'den al
-    const usdtData = paribuData['USDT'];
-    if (usdtData && usdtData.bid > 0) {
-      usdtry = usdtData.bid;
-    }
-    if (UI.showUSDT && usdtry) {
-      elUsd.textContent = fmtFixedTR(usdtry, 4);
-    }
-    console.log('💵 USDT/TRY:', usdtry || 'bekliyor...');
+    // USD/TRY (Paribu bid) — isteğe bağlı gösterim
+    try{
+      const usdt = await jget(paribuUrl('usdt'));
+      const best = parseParibu(usdt.payload);
+      if(isFinite(best.bid)) usdtry = best.bid;
+      if(UI.showUSDT) elUsd.textContent = fmtFixedTR(usdtry, 4);
+    }catch(e){}
 
     const syms = Array.from(watched);
     const jobs = syms.map(async sym=>{
-      // Paribu verisini stream cache'den al
-      const pData = paribuData[sym];
-      let pBest = { bid: NaN, ask: NaN };
-      
-      if (pData && pData.bid > 0 && pData.ask < Infinity) {
-        pBest = { bid: pData.bid, ask: pData.ask };
-        console.log(`📊 ${sym} Paribu (WS):`, pBest);
-      } else {
-        console.log(`⚠️ ${sym} Paribu verisi eksik/bekliyor:`, pData ? {bid: pData.bid, ask: pData.ask} : 'yok');
-      }
+      const pJson = await jget(paribuUrl(sym));
+      const pBest = parseParibu(pJson.payload);
 
-      // Binance'den REST ile al
-      let bBidUSDT = NaN, bAskUSDT = NaN;
-      try {
-        const bJson = await jget(binanceBook(sym));
-        bBidUSDT = parseFloat(bJson.bidPrice);
-        bAskUSDT = parseFloat(bJson.askPrice);
-        console.log(`📊 ${sym} Binance USDT:`, bBidUSDT, bAskUSDT);
-      } catch(e) { 
-        console.error(`❌ ${sym} Binance hatası:`, e);
-      }
+      const bJson = await jget(binanceBook(sym));
+      const bBidUSDT = parseFloat(bJson.bidPrice);
+      const bAskUSDT = parseFloat(bJson.askPrice);
 
-      const mul = (usdtry!=null && isFinite(usdtry)) ? usdtry : 1;
+      const mul = (usdtry!=null) ? usdtry : 1;
       const bBidTL = bBidUSDT * mul;
       const bAskTL = bAskUSDT * mul;
-      console.log(`📊 ${sym} Binance TL:`, bBidTL, bAskTL, '(çarpan:', mul, ')');
 
       const diff1 = pBest.bid - bAskTL; // Binance'den al, Paribu'da sat
       const diff2 = bBidTL - pBest.ask; // Paribu'dan al, Binance'de sat
-      console.log(`📊 ${sym} Farklar: diff1=${diff1.toFixed(4)}, diff2=${diff2.toFixed(4)}`);
 
       let show=false, low=0, high=0, pct=0, lowSrc='', highSrc='';
       let paribuAction=null, paribuPrice=null;
@@ -623,24 +421,18 @@ async function tick(){
           low = pBest.ask; high = bBidTL; lowSrc='Paribu'; highSrc='Binance';
           paribuAction = 'AL'; paribuPrice = pBest.ask;
         }
-        console.log(`✅ ${sym} Arbitraj: %${pct.toFixed(2)} - ${lowSrc}→${highSrc}`);
-      } else {
-        console.log(`⚪ ${sym} Arbitraj yok veya veri eksik`);
       }
       return {sym, show, low, high, pct, lowSrc, highSrc, paribuAction, paribuPrice};
     });
 
     let rows = await Promise.all(jobs);
-    console.log('📋 Tüm sonuçlar:', rows);
     rows = rows.filter(r => r && r.show && isFinite(r.pct) && r.pct >= (Number(minPctFilter)||0));
-    console.log('📋 Filtreli sonuçlar:', rows);
     rows.sort((a,b)=> b.pct - a.pct);
     draw(rows);
     updateHighlight(rows);
 
     elLast.textContent = nowStr();
   }catch(e){
-    console.error('❌ Tick hatası:', e);
     errors++; $('#err').textContent = errors;
   }finally{
     updating = false;
@@ -663,13 +455,13 @@ function draw(rows){
     // AL (düşük fiyat)
     const tdL = document.createElement('td'); tdL.className='mono alCell';
     tdL.textContent = fmt4(r.low);
-    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green';
+    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green'; // PyQt5 renklendirme
     tr.appendChild(tdL);
 
     // SAT (yüksek fiyat)
     const tdH = document.createElement('td'); tdH.className='mono satCell';
     tdH.textContent = fmt4(r.high);
-    tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange';
+    tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange'; // PyQt5 renklendirme
     tr.appendChild(tdH);
 
     // % Fark
@@ -685,8 +477,11 @@ function draw(rows){
 
 /* ====== En Yüksek Fark (yalnız Paribu) ====== */
 function updateHighlight(rows){
+  // genel açık/kapalı butonu
   if(!hiOn || UI.hiPos==='hidden'){ elHiWrap.classList.add('hidden'); return; }
   elHiWrap.classList.remove('hidden');
+
+  // konumlandırma
   placeHi(UI.hiPos);
 
   if(!rows.length){
@@ -724,11 +519,14 @@ function applyUI(u){
   document.documentElement.style.setProperty('--col-pct',  (u.col.pct||18)+'%');
   document.documentElement.style.setProperty('--card-font', u.cardFont+'px');
 
+  // Görsel öğeler
   elBtcBox.style.display = u.showBTC ? '' : 'none';
   elUsdBox.style.display = u.showUSDT ? '' : 'none';
 
+  // Konum
   placeHi(u.hiPos);
 
+  // UI panel değer etiketleri
   $('#ui_tableFont_val').textContent = u.tableFont+'px';
   $('#ui_padY_val').textContent = u.padY+'px';
   $('#ui_padX_val').textContent = u.padX+'px';
@@ -737,6 +535,7 @@ function applyUI(u){
   $('#ui_maxW_val').textContent = u.maxW+'px';
   $('#ui_cardFont_val').textContent = u.cardFont+'px';
 
+  // Inputlara yansıt
   $('#ui_tableFont').value = u.tableFont;
   $('#ui_padY').value = u.padY;
   $('#ui_padX').value = u.padX;
@@ -752,6 +551,7 @@ function applyUI(u){
   $('#ui_showBTC').checked = !!u.showBTC;
   $('#ui_showUSDT').checked = !!u.showUSDT;
 
+  // Sütun toplamı göstergesi
   const sum = (+u.col.coin)+(+u.col.al)+(+u.col.sat)+(+u.col.pct);
   const ok = Math.round(sum)===100;
   $('#ui_colSum').textContent = 'Toplam: '+sum.toFixed(0)+'% ' + (ok?'✓':'(100 olmalı — otomatik normalize edilir)');
@@ -762,10 +562,11 @@ function normalizeCols(){
   let {coin,al,sat,pct} = UI.col;
   let sum = coin+al+sat+pct;
   if(sum<=0) { UI.col={coin:28,al:27,sat:27,pct:18}; return; }
+  // normalize to 100
   UI.col.coin = +(coin*100/sum).toFixed(0);
   UI.col.al   = +(al*100/sum).toFixed(0);
   UI.col.sat  = +(sat*100/sum).toFixed(0);
-  UI.col.pct  = 100 - UI.col.coin - UI.col.al - UI.col.sat;
+  UI.col.pct  = 100 - UI.col.coin - UI.col.al - UI.col.sat; // ensure sum=100
 }
 
 function placeHi(pos){
@@ -787,10 +588,7 @@ function renderChips(){
     b.onclick = ()=>{
       watched.delete(sym);
       LS.set('arbi:watched', Array.from(watched));
-      $('#cnt').textContent = watched.size; 
-      renderChips();
-      // WebSocket'ten unsubscribe
-      unsubscribeFromChannel(sym);
+      $('#cnt').textContent = watched.size; renderChips();
     };
     d.appendChild(b); wrap.appendChild(d);
   });
@@ -814,16 +612,12 @@ $('#add').onclick = ()=>{
     watched.add(sym);
     LS.set('arbi:watched', Array.from(watched));
     renderChips();
-    // WebSocket'e subscribe
-    subscribeToChannel(sym);
   }
   $('#coinIn').value='';
 };
 $('#coinIn').addEventListener('keydown',(e)=>{ if(e.key==='Enter') $('#add').click(); });
 
 $('#clear').onclick = ()=>{
-  // Tüm kanallardan unsubscribe
-  watched.forEach(sym => unsubscribeFromChannel(sym));
   watched.clear();
   LS.set('arbi:watched', []);
   renderChips(); elBody.innerHTML='';
@@ -840,7 +634,7 @@ elHiToggle.addEventListener('click', ()=>{
   hiOn = !hiOn;
   LS.set('arbi:hiOn', hiOn);
   elHiToggle.textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
-  updateHighlight([]);
+  updateHighlight([]); // anlık uygula
 });
 elCustomToggle.addEventListener('click', ()=>{
   const open = elCustomWrap.classList.toggle('hidden');
@@ -884,9 +678,6 @@ $('#ui_reset').onclick = ()=>{
   elHiToggle.textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
   schedule(isFinite(refreshMs) ? refreshMs : 1000);
   elLast.textContent = nowStr();
-  
-  // WebSocket bağlantısını başlat
-  connectParibuWs();
 })();
 setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
 </script>
