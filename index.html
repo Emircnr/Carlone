@@ -376,22 +376,24 @@ function updateWsStatus(status) {
 
 function connectParibuWs() {
   if (paribuWs && (paribuWs.readyState === WebSocket.OPEN || paribuWs.readyState === WebSocket.CONNECTING)) {
+    console.log('⚠️ WebSocket zaten bağlı veya bağlanıyor');
     return;
   }
   
   updateWsStatus('connecting');
+  console.log('🔌 WebSocket bağlantısı başlatılıyor:', PARIBU_WS_URL);
   
   try {
     paribuWs = new WebSocket(PARIBU_WS_URL);
   } catch (e) {
-    console.error('WebSocket oluşturma hatası:', e);
+    console.error('❌ WebSocket oluşturma hatası:', e);
     updateWsStatus('disconnected');
     scheduleReconnect();
     return;
   }
   
   paribuWs.onopen = () => {
-    console.log('Paribu WebSocket bağlandı');
+    console.log('✅ Paribu WebSocket bağlandı');
     updateWsStatus('connected');
     subscribedChannels.clear();
     
@@ -405,12 +407,15 @@ function connectParibuWs() {
   paribuWs.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
+      console.log('📨 WS Mesaj:', msg.e || msg.status, msg.s || '', msg);
       
       // Orderbook verisi
       if (msg.e === 'orderbook' && msg.r) {
         const symbol = msg.s.replace('_tl', '').toUpperCase();
         const bids = msg.r.b || [];
         const asks = msg.r.a || [];
+        
+        console.log(`📊 ${symbol} - Bids: ${bids.length}, Asks: ${asks.length}`);
         
         // En iyi bid ve ask'ı bul
         let bestBid = 0, bestAsk = Infinity;
@@ -425,6 +430,8 @@ function connectParibuWs() {
           if (p < bestAsk) bestAsk = p;
         });
         
+        console.log(`💰 ${symbol} - Best Bid: ${bestBid}, Best Ask: ${bestAsk}`);
+        
         if (bestBid > 0 && bestAsk < Infinity) {
           paribuData[symbol] = { bid: bestBid, ask: bestAsk };
           
@@ -432,6 +439,7 @@ function connectParibuWs() {
           if (symbol === 'USDT' && UI.showUSDT) {
             usdtry = bestBid;
             elUsd.textContent = fmtFixedTR(usdtry, 4);
+            console.log('💵 USDT/TRY güncellendi:', usdtry);
           }
         }
       }
@@ -439,13 +447,15 @@ function connectParibuWs() {
       // Subscription response
       if (msg.status) {
         if (msg.status === 100) {
-          console.log('Subscription başarılı:', msg.id);
+          console.log('✅ Subscription başarılı:', msg.id);
         } else if (msg.status === 201) {
-          console.warn('Subscription hatası:', msg.id, msg.message);
+          console.warn('❌ Subscription hatası:', msg.id, msg.message);
+        } else {
+          console.log('📋 Status:', msg.status, msg);
         }
       }
     } catch (e) {
-      console.error('WebSocket mesaj parse hatası:', e);
+      console.error('WebSocket mesaj parse hatası:', e, event.data);
     }
   };
   
@@ -472,10 +482,16 @@ function scheduleReconnect() {
 }
 
 function subscribeToChannel(sym) {
-  if (!paribuWs || paribuWs.readyState !== WebSocket.OPEN) return;
+  if (!paribuWs || paribuWs.readyState !== WebSocket.OPEN) {
+    console.warn('⚠️ WebSocket bağlı değil, subscribe yapılamıyor:', sym);
+    return;
+  }
   
   const channel = `orderbook:${sym.toLowerCase()}_tl@100ms`;
-  if (subscribedChannels.has(channel)) return;
+  if (subscribedChannels.has(channel)) {
+    console.log('ℹ️ Zaten abone:', channel);
+    return;
+  }
   
   const msg = {
     method: 'subscribe',
@@ -483,9 +499,9 @@ function subscribeToChannel(sym) {
     id: `req_${++wsRequestId}`
   };
   
+  console.log('📤 Subscribe gönderiliyor:', msg);
   paribuWs.send(JSON.stringify(msg));
   subscribedChannels.add(channel);
-  console.log('Subscribed:', channel);
 }
 
 function unsubscribeFromChannel(sym) {
@@ -519,6 +535,7 @@ async function jget(url){
 async function tick(){
   if(updating) return;
   updating = true;
+  console.log('🔄 Tick başladı - İzlenen:', Array.from(watched), 'Paribu Cache:', Object.keys(paribuData));
   try{
     // BTC canlı (isteğe bağlı)
     if(UI.showBTC){
@@ -526,7 +543,7 @@ async function tick(){
         const btc = await jget(BINANCE_BTC_PRICE);
         const p = parseFloat(btc.price);
         if(isFinite(p)) elBtc.textContent = fmtFixedTR(p, 2);
-      }catch(e){}
+      }catch(e){ console.error('BTC fetch hatası:', e); }
     }
 
     if(watched.size===0){
@@ -537,17 +554,18 @@ async function tick(){
       return;
     }
 
-    // USD/TRY stream'den geliyor, ayrıca çekmeye gerek yok
-    // Sadece UI'da göster (eğer stream'den geldiyse)
+    // USD/TRY stream'den geliyor
     if(UI.showUSDT && paribuData['USDT']){
       usdtry = paribuData['USDT'].bid;
       elUsd.textContent = fmtFixedTR(usdtry, 4);
     }
+    console.log('💵 USDT/TRY değeri:', usdtry);
 
     const syms = Array.from(watched);
     const jobs = syms.map(async sym=>{
       // Paribu verisini stream cache'den al
       const pBest = paribuData[sym] || { bid: NaN, ask: NaN };
+      console.log(`📊 ${sym} Paribu:`, pBest);
 
       // Binance'den REST ile al
       let bBidUSDT = NaN, bAskUSDT = NaN;
@@ -555,14 +573,19 @@ async function tick(){
         const bJson = await jget(binanceBook(sym));
         bBidUSDT = parseFloat(bJson.bidPrice);
         bAskUSDT = parseFloat(bJson.askPrice);
-      } catch(e) {}
+        console.log(`📊 ${sym} Binance USDT:`, bBidUSDT, bAskUSDT);
+      } catch(e) { 
+        console.error(`❌ ${sym} Binance hatası:`, e);
+      }
 
       const mul = (usdtry!=null && isFinite(usdtry)) ? usdtry : 1;
       const bBidTL = bBidUSDT * mul;
       const bAskTL = bAskUSDT * mul;
+      console.log(`📊 ${sym} Binance TL:`, bBidTL, bAskTL, '(çarpan:', mul, ')');
 
       const diff1 = pBest.bid - bAskTL; // Binance'den al, Paribu'da sat
       const diff2 = bBidTL - pBest.ask; // Paribu'dan al, Binance'de sat
+      console.log(`📊 ${sym} Farklar: diff1=${diff1.toFixed(4)}, diff2=${diff2.toFixed(4)}`);
 
       let show=false, low=0, high=0, pct=0, lowSrc='', highSrc='';
       let paribuAction=null, paribuPrice=null;
@@ -578,18 +601,24 @@ async function tick(){
           low = pBest.ask; high = bBidTL; lowSrc='Paribu'; highSrc='Binance';
           paribuAction = 'AL'; paribuPrice = pBest.ask;
         }
+        console.log(`✅ ${sym} Arbitraj: %${pct.toFixed(2)} - ${lowSrc}→${highSrc}`);
+      } else {
+        console.log(`⚪ ${sym} Arbitraj yok veya veri eksik`);
       }
       return {sym, show, low, high, pct, lowSrc, highSrc, paribuAction, paribuPrice};
     });
 
     let rows = await Promise.all(jobs);
+    console.log('📋 Tüm sonuçlar:', rows);
     rows = rows.filter(r => r && r.show && isFinite(r.pct) && r.pct >= (Number(minPctFilter)||0));
+    console.log('📋 Filtreli sonuçlar:', rows);
     rows.sort((a,b)=> b.pct - a.pct);
     draw(rows);
     updateHighlight(rows);
 
     elLast.textContent = nowStr();
   }catch(e){
+    console.error('❌ Tick hatası:', e);
     errors++; $('#err').textContent = errors;
   }finally{
     updating = false;
