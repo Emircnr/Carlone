@@ -407,7 +407,6 @@ function connectParibuWs() {
   paribuWs.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
-      console.log('📨 WS Mesaj:', msg.e || msg.status, msg.s || '', msg);
       
       // Orderbook verisi
       if (msg.e === 'orderbook' && msg.r) {
@@ -415,31 +414,46 @@ function connectParibuWs() {
         const bids = msg.r.b || [];
         const asks = msg.r.a || [];
         
-        console.log(`📊 ${symbol} - Bids: ${bids.length}, Asks: ${asks.length}`);
+        // Mevcut veriyi al veya oluştur
+        if (!paribuData[symbol]) {
+          paribuData[symbol] = { bid: 0, ask: Infinity, bids: {}, asks: {} };
+        }
+        const data = paribuData[symbol];
         
-        // En iyi bid ve ask'ı bul
-        let bestBid = 0, bestAsk = Infinity;
-        
+        // Bids güncelle (delta - sadece değişenler geliyor)
         bids.forEach(([price, amount]) => {
           const p = parseFloat(price);
-          if (p > bestBid) bestBid = p;
+          const a = parseFloat(amount);
+          if (a > 0) {
+            data.bids[price] = { price: p, amount: a };
+          } else {
+            delete data.bids[price]; // amount 0 ise sil
+          }
         });
         
+        // Asks güncelle (delta)
         asks.forEach(([price, amount]) => {
           const p = parseFloat(price);
-          if (p < bestAsk) bestAsk = p;
+          const a = parseFloat(amount);
+          if (a > 0) {
+            data.asks[price] = { price: p, amount: a };
+          } else {
+            delete data.asks[price];
+          }
         });
         
-        console.log(`💰 ${symbol} - Best Bid: ${bestBid}, Best Ask: ${bestAsk}`);
+        // En iyi bid ve ask'ı hesapla
+        const bidPrices = Object.values(data.bids).map(b => b.price);
+        const askPrices = Object.values(data.asks).map(a => a.price);
         
-        if (bestBid > 0 && bestAsk < Infinity) {
-          paribuData[symbol] = { bid: bestBid, ask: bestAsk };
-          
-          // USDT/TRY güncelle
-          if (symbol === 'USDT' && UI.showUSDT) {
-            usdtry = bestBid;
+        data.bid = bidPrices.length > 0 ? Math.max(...bidPrices) : 0;
+        data.ask = askPrices.length > 0 ? Math.min(...askPrices) : Infinity;
+        
+        // USDT/TRY güncelle
+        if (symbol === 'USDT' && data.bid > 0) {
+          usdtry = data.bid;
+          if (UI.showUSDT) {
             elUsd.textContent = fmtFixedTR(usdtry, 4);
-            console.log('💵 USDT/TRY güncellendi:', usdtry);
           }
         }
       }
@@ -450,8 +464,6 @@ function connectParibuWs() {
           console.log('✅ Subscription başarılı:', msg.id);
         } else if (msg.status === 201) {
           console.warn('❌ Subscription hatası:', msg.id, msg.message);
-        } else {
-          console.log('📋 Status:', msg.status, msg);
         }
       }
     } catch (e) {
@@ -554,18 +566,28 @@ async function tick(){
       return;
     }
 
-    // USD/TRY stream'den geliyor
-    if(UI.showUSDT && paribuData['USDT']){
-      usdtry = paribuData['USDT'].bid;
+    // USD/TRY - stream'den al
+    const usdtData = paribuData['USDT'];
+    if (usdtData && usdtData.bid > 0) {
+      usdtry = usdtData.bid;
+    }
+    if (UI.showUSDT && usdtry) {
       elUsd.textContent = fmtFixedTR(usdtry, 4);
     }
-    console.log('💵 USDT/TRY değeri:', usdtry);
+    console.log('💵 USDT/TRY:', usdtry || 'bekliyor...');
 
     const syms = Array.from(watched);
     const jobs = syms.map(async sym=>{
       // Paribu verisini stream cache'den al
-      const pBest = paribuData[sym] || { bid: NaN, ask: NaN };
-      console.log(`📊 ${sym} Paribu:`, pBest);
+      const pData = paribuData[sym];
+      let pBest = { bid: NaN, ask: NaN };
+      
+      if (pData && pData.bid > 0 && pData.ask < Infinity) {
+        pBest = { bid: pData.bid, ask: pData.ask };
+        console.log(`📊 ${sym} Paribu (WS):`, pBest);
+      } else {
+        console.log(`⚠️ ${sym} Paribu verisi eksik/bekliyor:`, pData ? {bid: pData.bid, ask: pData.ask} : 'yok');
+      }
 
       // Binance'den REST ile al
       let bBidUSDT = NaN, bAskUSDT = NaN;
