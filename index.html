@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Arbitraj Radarı — Paribu ⇄ Binance (TL)</title>
+<title>Arbitraj Radarı — Bitkub ⇄ Binance (THB)</title>
 <style>
   /* ===== Temalar ===== */
   .theme-dark{
@@ -102,9 +102,9 @@
 <body>
 <header>
   <div>
-    <h1>Arbitraj Radarı — Paribu ⇄ Binance (TL)</h1>
+    <h1>Arbitraj Radarı — Bitkub ⇄ Binance (THB)</h1>
     <div class="sub">
-      <span id="usdBox">USDT→TRY: <span id="usdtry" class="mono">—</span></span>
+      <span id="usdBox">USDT→THB: <span id="usdthb" class="mono">—</span></span>
       · Son: <span id="last" class="mono">—</span>
     </div>
   </div>
@@ -116,14 +116,12 @@
   </div>
 </header>
 
-<!-- Highlight kartı için yerleşim noktaları -->
 <div id="anchorTop"></div>
 
-<!-- EN YÜKSEK FARK — sade metin: "ACM PARİBU AL 39,92 TL %0,23" -->
 <section id="hiWrap" class="hiWrap">
   <div class="hiLine">
     <span id="hiCoin">—</span>
-    <span class="hiGreen" id="hiAct">PARİBU • —</span>
+    <span class="hiGreen" id="hiAct">BİTKUB • —</span>
     <span id="hiPrice" class="mono">—</span>
     <span id="hiPct" class="mono">—</span>
   </div>
@@ -169,7 +167,6 @@
   </div>
 </section>
 
-<!-- KİŞİSELLEŞTİR paneli (aç/kapa) -->
 <section id="customWrap" class="customWrap hidden">
   <div class="customPanel">
     <div class="grid3">
@@ -252,7 +249,7 @@
 
     <div class="grid3">
       <label class="kv" style="gap:6px"><input id="ui_showBTC" type="checkbox"> BTC Fiyatını Göster</label>
-      <label class="kv" style="gap:6px"><input id="ui_showUSDT" type="checkbox" checked> USDT→TRY’yi Göster</label>
+      <label class="kv" style="gap:6px"><input id="ui_showUSDT" type="checkbox" checked> USDT→THB’yi Göster</label>
       <div></div>
     </div>
 
@@ -262,7 +259,6 @@
   </div>
 </section>
 
-<!-- Kontrollerin altına yerleştirme için kanca -->
 <div id="anchorAfterControls"></div>
 
 <section class="tableWrap">
@@ -285,7 +281,6 @@
   </table>
 </section>
 
-<!-- Tablonun altına yerleştirme için kanca -->
 <div id="anchorAfterTable"></div>
 
 <script>
@@ -298,15 +293,17 @@ const LS = {
 function norm(sym){
   if(!sym) return '';
   return sym.trim().toUpperCase()
-    .replaceAll('İ','I').replaceAll('İ','I')
+    .replaceAll('İ','I').replaceAll('İ','I')
     .replaceAll('Ç','C').replaceAll('Ğ','G').replaceAll('Ö','O').replaceAll('Ş','S').replaceAll('Ü','U');
 }
-function fmtFixedTR(n, d=2){
+// TL yerine THB formatı, aynı mantık
+function fmtFixedTHB(n, d=2){
   if(n==null || !isFinite(n)) return '—';
-  return Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d, maximumFractionDigits:d});
+  return Number(n).toLocaleString('th-TH',{minimumFractionDigits:d, maximumFractionDigits:d});
 }
 function fmtPctTR(n, d=2){
   if(n==null || !isFinite(n)) return '—';
+  // % işareti Tayland standardında da solda kullanılabilir veya TR mantığı korunabilir.
   return '%'+Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d, maximumFractionDigits:d});
 }
 function fmt4(n){ return (n==null||!isFinite(n)) ? '—' : Number(n).toFixed(4); }
@@ -314,7 +311,7 @@ function nowStr(){ return new Date().toLocaleTimeString('tr-TR'); }
 
 /* ====== Durum ====== */
 let watched = new Set(LS.get('arbi:watched', []));
-let refreshMs = Number(LS.get('arbi:interval', 1000));
+let refreshMs = Number(LS.get('arbi:interval', 2000)); // Bitkub API biraz daha hassas olabilir, 2sn default iyi
 let minPctFilter = Number(LS.get('arbi:minpct', 0.00));
 let themeMode = LS.get('arbi:theme', 'dark');
 let hiOn = LS.get('arbi:hiOn', true);
@@ -335,43 +332,52 @@ const UI_DEFAULTS = {
 let UI = Object.assign({}, UI_DEFAULTS, LS.get('arbi:UI', UI_DEFAULTS));
 if(!UI.col) UI.col = { coin:28, al:27, sat:27, pct:18 };
 
-let timer = null, updating = false, errors = 0, usdtry = null;
+let timer = null, updating = false, errors = 0, usdthb = null;
 
-const elUsd = $('#usdtry'), elUsdBox = $('#usdBox'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#err'),
+const elUsd = $('#usdthb'), elUsdBox = $('#usdBox'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#err'),
       elBody = $('#tbody'), elRngLbl = $('#rngLbl'), elRng = $('#rng'), elMin = $('#minPct'),
       elThemeSel = $('#themeSel'), elBtc = $('#btc'), elBtcBox = $('#btcBox'),
       elHiWrap = $('#hiWrap'), elHiCoin = $('#hiCoin'), elHiAct = $('#hiAct'),
       elHiPrice = $('#hiPrice'), elHiPct = $('#hiPct'), elHiToggle = $('#toggleHi'),
       elCustomWrap = $('#customWrap'), elCustomToggle = $('#toggleCustom');
 
-/* ====== Ağ ====== */
-function paribuUrl(sym){ return `https://web.paribu.com/market/${sym.toLowerCase()}_tl/orderbook`; }
+/* ====== Ağ (BİTKUB ENTEGRASYONU) ====== */
+// Bitkub'da semboller genellikle THB_BTC, THB_ETH şeklindedir.
+function bitkubUrl(sym){ return `https://api.bitkub.com/api/market/books?sym=THB_${sym.toUpperCase()}&lmt=1`; }
 function binanceBook(sym){ return `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`; }
 const BINANCE_BTC_PRICE = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
+
 async function jget(url){
   const res = await fetch(url, {cache:'no-store'});
   if(!res.ok) throw new Error('HTTP '+res.status);
   return res.json();
 }
-function parseParibu(payload){
-  if(!payload || !payload.buy || !payload.sell) return {bid:NaN, ask:NaN};
-  const bids = Object.keys(payload.buy).map(parseFloat).filter(x=>!isNaN(x));
-  const asks = Object.keys(payload.sell).map(parseFloat).filter(x=>!isNaN(x));
-  if(!bids.length || !asks.length) return {bid:NaN, ask:NaN};
-  return { bid: Math.max(...bids), ask: Math.min(...asks) }; // PyQt5 ile aynı
+
+// Bitkub Response: { error:0, result: { bids: [[price, vol, ts], ...], asks: [...] } }
+function parseBitkub(json){
+  if(!json || json.error !== 0 || !json.result) return {bid:NaN, ask:NaN};
+  const r = json.result;
+  // bids: en yüksek alış en başta [0]
+  // asks: en düşük satış en başta [0]
+  let bestBid = NaN, bestAsk = NaN;
+
+  if(r.bids && r.bids.length > 0) bestBid = parseFloat(r.bids[0][0]);
+  if(r.asks && r.asks.length > 0) bestAsk = parseFloat(r.asks[0][0]);
+
+  return { bid: bestBid, ask: bestAsk };
 }
 
-/* ====== Mantık (PyQt5 ile birebir) ====== */
+/* ====== Mantık ====== */
 async function tick(){
   if(updating) return;
   updating = true;
   try{
-    // BTC canlı (isteğe bağlı)
+    // BTC canlı
     if(UI.showBTC){
       try{
         const btc = await jget(BINANCE_BTC_PRICE);
         const p = parseFloat(btc.price);
-        if(isFinite(p)) elBtc.textContent = fmtFixedTR(p, 2);
+        if(isFinite(p)) elBtc.textContent = fmtFixedTHB(p, 2);
       }catch(e){}
     }
 
@@ -383,46 +389,55 @@ async function tick(){
       return;
     }
 
-    // USD/TRY (Paribu bid) — isteğe bağlı gösterim
+    // USDT/THB (Bitkub'dan alıyoruz)
     try{
-      const usdt = await jget(paribuUrl('usdt'));
-      const best = parseParibu(usdt.payload);
-      if(isFinite(best.bid)) usdtry = best.bid;
-      if(UI.showUSDT) elUsd.textContent = fmtFixedTR(usdtry, 4);
+      const usdtJson = await jget(bitkubUrl('USDT'));
+      const best = parseBitkub(usdtJson);
+      // Arbitraj için güvenli tarafı veya ortalamayı alabiliriz, burada direkt 'bid' (bozdurma) mantıklı olabilir
+      // ama genellikle çarpım için "Piyasa fiyatı" istenir. En iyi 'bid' (alış) kullanılırsa muhafazakar olur.
+      if(isFinite(best.bid)) usdthb = best.bid;
+      if(UI.showUSDT) elUsd.textContent = fmtFixedTHB(usdthb, 4);
     }catch(e){}
 
     const syms = Array.from(watched);
     const jobs = syms.map(async sym=>{
-      const pJson = await jget(paribuUrl(sym));
-      const pBest = parseParibu(pJson.payload);
+      // Bitkub verisi
+      const kJson = await jget(bitkubUrl(sym));
+      const kBest = parseBitkub(kJson); // kBest = Bitkub Best
 
+      // Binance verisi
       const bJson = await jget(binanceBook(sym));
       const bBidUSDT = parseFloat(bJson.bidPrice);
       const bAskUSDT = parseFloat(bJson.askPrice);
 
-      const mul = (usdtry!=null) ? usdtry : 1;
-      const bBidTL = bBidUSDT * mul;
-      const bAskTL = bAskUSDT * mul;
+      const mul = (usdthb!=null) ? usdthb : 1;
+      const bBidTHB = bBidUSDT * mul;
+      const bAskTHB = bAskUSDT * mul;
 
-      const diff1 = pBest.bid - bAskTL; // Binance'den al, Paribu'da sat
-      const diff2 = bBidTL - pBest.ask; // Paribu'dan al, Binance'de sat
+      // Arbitraj Hesapla
+      // Fark 1: Binance'den AL (bAsk), Bitkub'da SAT (kBest.bid)
+      const diff1 = kBest.bid - bAskTHB; 
+      // Fark 2: Bitkub'dan AL (kBest.ask), Binance'de SAT (bBid)
+      const diff2 = bBidTHB - kBest.ask; 
 
       let show=false, low=0, high=0, pct=0, lowSrc='', highSrc='';
-      let paribuAction=null, paribuPrice=null;
+      let bitkubAction=null, bitkubPrice=null;
 
-      if((diff1>0 || diff2>0) && isFinite(pBest.bid) && isFinite(pBest.ask) && isFinite(bBidTL) && isFinite(bAskTL)){
+      if((diff1>0 || diff2>0) && isFinite(kBest.bid) && isFinite(kBest.ask) && isFinite(bBidTHB) && isFinite(bAskTHB)){
         show = true;
         if(diff1 > diff2){
-          pct = (diff1 / bAskTL) * 100;
-          low = bAskTL; high = pBest.bid; lowSrc='Binance'; highSrc='Paribu';
-          paribuAction = 'SAT'; paribuPrice = pBest.bid;
+          // Binance -> Bitkub
+          pct = (diff1 / bAskTHB) * 100;
+          low = bAskTHB; high = kBest.bid; lowSrc='Binance'; highSrc='Bitkub';
+          bitkubAction = 'SAT'; bitkubPrice = kBest.bid;
         }else{
-          pct = (diff2 / pBest.ask) * 100;
-          low = pBest.ask; high = bBidTL; lowSrc='Paribu'; highSrc='Binance';
-          paribuAction = 'AL'; paribuPrice = pBest.ask;
+          // Bitkub -> Binance
+          pct = (diff2 / kBest.ask) * 100;
+          low = kBest.ask; high = bBidTHB; lowSrc='Bitkub'; highSrc='Binance';
+          bitkubAction = 'AL'; bitkubPrice = kBest.ask;
         }
       }
-      return {sym, show, low, high, pct, lowSrc, highSrc, paribuAction, paribuPrice};
+      return {sym, show, low, high, pct, lowSrc, highSrc, bitkubAction, bitkubPrice};
     });
 
     let rows = await Promise.all(jobs);
@@ -434,6 +449,7 @@ async function tick(){
     elLast.textContent = nowStr();
   }catch(e){
     errors++; $('#err').textContent = errors;
+    console.error(e);
   }finally{
     updating = false;
   }
@@ -445,23 +461,23 @@ function draw(rows){
   rows.forEach(r=>{
     const tr = document.createElement('tr');
 
-    // Coin (solda, kalın)
+    // Coin
     const tdCoin = document.createElement('td');
     tdCoin.className = 'coinCell';
     const sym = document.createElement('span'); sym.className='coinSym'; sym.textContent = r.sym;
     tdCoin.appendChild(sym);
     tr.appendChild(tdCoin);
 
-    // AL (düşük fiyat)
+    // AL (Düşük)
     const tdL = document.createElement('td'); tdL.className='mono alCell';
     tdL.textContent = fmt4(r.low);
-    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green'; // PyQt5 renklendirme
+    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green'; 
     tr.appendChild(tdL);
 
-    // SAT (yüksek fiyat)
+    // SAT (Yüksek)
     const tdH = document.createElement('td'); tdH.className='mono satCell';
     tdH.textContent = fmt4(r.high);
-    tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange'; // PyQt5 renklendirme
+    tdH.style.background = (r.highSrc==='Bitkub') ? 'green' : 'orange'; 
     tr.appendChild(tdH);
 
     // % Fark
@@ -475,24 +491,22 @@ function draw(rows){
   elBody.appendChild(frag);
 }
 
-/* ====== En Yüksek Fark (yalnız Paribu) ====== */
+/* ====== En Yüksek Fark (yalnız Bitkub tarafı vurgusu) ====== */
 function updateHighlight(rows){
-  // genel açık/kapalı butonu
   if(!hiOn || UI.hiPos==='hidden'){ elHiWrap.classList.add('hidden'); return; }
   elHiWrap.classList.remove('hidden');
 
-  // konumlandırma
   placeHi(UI.hiPos);
 
   if(!rows.length){
-    elHiCoin.textContent='—'; elHiAct.textContent='PARİBU • —'; elHiPrice.textContent='—'; elHiPct.textContent='—';
+    elHiCoin.textContent='—'; elHiAct.textContent='BİTKUB • —'; elHiPrice.textContent='—'; elHiPct.textContent='—';
     return;
   }
   const r = rows[0];
   elHiCoin.textContent = r.sym;
-  const act = r.paribuAction === 'AL' ? 'AL' : 'SAT';
-  elHiAct.textContent = `PARİBU • ${act}`;
-  elHiPrice.textContent = `${fmtFixedTR(r.paribuPrice, 2)} TL`;
+  const act = r.bitkubAction === 'AL' ? 'AL' : 'SAT';
+  elHiAct.textContent = `BİTKUB • ${act}`;
+  elHiPrice.textContent = `${fmtFixedTHB(r.bitkubPrice, 2)} THB`;
   elHiPct.textContent = fmtPctTR(r.pct, 2);
 }
 
@@ -519,14 +533,11 @@ function applyUI(u){
   document.documentElement.style.setProperty('--col-pct',  (u.col.pct||18)+'%');
   document.documentElement.style.setProperty('--card-font', u.cardFont+'px');
 
-  // Görsel öğeler
   elBtcBox.style.display = u.showBTC ? '' : 'none';
   elUsdBox.style.display = u.showUSDT ? '' : 'none';
 
-  // Konum
   placeHi(u.hiPos);
 
-  // UI panel değer etiketleri
   $('#ui_tableFont_val').textContent = u.tableFont+'px';
   $('#ui_padY_val').textContent = u.padY+'px';
   $('#ui_padX_val').textContent = u.padX+'px';
@@ -535,7 +546,6 @@ function applyUI(u){
   $('#ui_maxW_val').textContent = u.maxW+'px';
   $('#ui_cardFont_val').textContent = u.cardFont+'px';
 
-  // Inputlara yansıt
   $('#ui_tableFont').value = u.tableFont;
   $('#ui_padY').value = u.padY;
   $('#ui_padX').value = u.padX;
@@ -551,10 +561,9 @@ function applyUI(u){
   $('#ui_showBTC').checked = !!u.showBTC;
   $('#ui_showUSDT').checked = !!u.showUSDT;
 
-  // Sütun toplamı göstergesi
   const sum = (+u.col.coin)+(+u.col.al)+(+u.col.sat)+(+u.col.pct);
   const ok = Math.round(sum)===100;
-  $('#ui_colSum').textContent = 'Toplam: '+sum.toFixed(0)+'% ' + (ok?'✓':'(100 olmalı — otomatik normalize edilir)');
+  $('#ui_colSum').textContent = 'Toplam: '+sum.toFixed(0)+'% ' + (ok?'✓':'(100 olmalı)');
 }
 
 function saveUI(){ LS.set('arbi:UI', UI); }
@@ -562,23 +571,22 @@ function normalizeCols(){
   let {coin,al,sat,pct} = UI.col;
   let sum = coin+al+sat+pct;
   if(sum<=0) { UI.col={coin:28,al:27,sat:27,pct:18}; return; }
-  // normalize to 100
   UI.col.coin = +(coin*100/sum).toFixed(0);
   UI.col.al   = +(al*100/sum).toFixed(0);
   UI.col.sat  = +(sat*100/sum).toFixed(0);
-  UI.col.pct  = 100 - UI.col.coin - UI.col.al - UI.col.sat; // ensure sum=100
+  UI.col.pct  = 100 - UI.col.coin - UI.col.al - UI.col.sat; 
 }
 
 function placeHi(pos){
   const wrap = elHiWrap;
   if(pos==='hidden'){ wrap.classList.add('hidden'); return; }
   wrap.classList.remove('hidden');
-  if(pos==='top')        $('#anchorTop').after(wrap);
+  if(pos==='top')         $('#anchorTop').after(wrap);
   else if(pos==='afterControls') $('#anchorAfterControls').after(wrap);
   else if(pos==='afterTable') $('#anchorAfterTable').after(wrap);
 }
 
-/* ====== UI / Kontroller (kalıcı) ====== */
+/* ====== UI / Kontroller ====== */
 function renderChips(){
   const wrap = $('#chips'); wrap.innerHTML='';
   Array.from(watched).sort().forEach(sym=>{
@@ -634,14 +642,13 @@ elHiToggle.addEventListener('click', ()=>{
   hiOn = !hiOn;
   LS.set('arbi:hiOn', hiOn);
   elHiToggle.textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
-  updateHighlight([]); // anlık uygula
+  updateHighlight([]); 
 });
 elCustomToggle.addEventListener('click', ()=>{
   const open = elCustomWrap.classList.toggle('hidden');
   elCustomToggle.textContent = 'Kişiselleştir: ' + (open ? 'Kapalı' : 'Açık');
 });
 
-/* Kişiselleştirme inputları */
 $('#ui_tableFont').oninput = (e)=>{ UI.tableFont=+e.target.value; applyUI(UI); saveUI(); };
 $('#ui_padY').oninput = (e)=>{ UI.padY=+e.target.value; applyUI(UI); saveUI(); };
 $('#ui_padX').oninput = (e)=>{ UI.padX=+e.target.value; applyUI(UI); saveUI(); };
@@ -676,7 +683,7 @@ $('#ui_reset').onclick = ()=>{
   applyUI(UI);
   $('#minPct').value = isFinite(minPctFilter)? minPctFilter : 0.00;
   elHiToggle.textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
-  schedule(isFinite(refreshMs) ? refreshMs : 1000);
+  schedule(isFinite(refreshMs) ? refreshMs : 2000);
   elLast.textContent = nowStr();
 })();
 setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
