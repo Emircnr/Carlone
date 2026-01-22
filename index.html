@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Arbitraj Radarı — Binance TR ⇄ Binance (TL)</title>
+<title>Arbitraj Radarı — Binance TR ⇄ Binance (WebSocket)</title>
 <style>
   .theme-dark{
     --bg:#0b1220; --panel:#111a2b; --panel2:#0f1626; --text:#e6edf6;
@@ -20,17 +20,9 @@
     --greenBg:#e9f8ef; --greenBd:#b9e5c8; --greenTx:#166534;
   }
   :root{
-    --table-font:18px;
-    --cell-pad-y:12px;
-    --cell-pad-x:10px;
-    --row-gap:6px;
-    --cell-radius:12px;
-    --container-max:1100px;
-    --col-coin:28%;
-    --col-al:27%;
-    --col-sat:27%;
-    --col-pct:18%;
-    --card-font:22px;
+    --table-font:18px; --cell-pad-y:12px; --cell-pad-x:10px; --row-gap:6px;
+    --cell-radius:12px; --container-max:1100px;
+    --col-coin:28%; --col-al:27%; --col-sat:27%; --col-pct:18%; --card-font:22px;
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
@@ -40,24 +32,19 @@
   header .rightBox{display:flex;gap:14px;align-items:center}
   .btn{background:var(--accent);color:#091220;border:none;border-radius:10px;padding:10px 12px;font-weight:600;cursor:pointer}
   .ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
+  .wsStatus{padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600}
+  .wsStatus.connected{background:#22c55e;color:#000}
+  .wsStatus.disconnected{background:#ef4444;color:#fff}
+  .wsStatus.connecting{background:#f59e0b;color:#000}
   .hiWrap{padding:10px 16px}
   .hidden{display:none}
-  .hiLine{
-    font-size:var(--card-font);font-weight:800;letter-spacing:.2px;
-    background:var(--panel2);border:1px solid var(--border);
-    border-left:6px solid #22c55e;border-radius:14px;padding:10px 14px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap
-  }
-  .hiGreen{background:var(--greenBg);border:1px solid var(--greenBd);color:var(--greenTx);
-    border-radius:999px;padding:4px 10px;font-weight:800}
+  .hiLine{font-size:var(--card-font);font-weight:800;letter-spacing:.2px;background:var(--panel2);border:1px solid var(--border);border-left:6px solid #22c55e;border-radius:14px;padding:10px 14px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .hiGreen{background:var(--greenBg);border:1px solid var(--greenBd);color:var(--greenTx);border-radius:999px;padding:4px 10px;font-weight:800}
   .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;padding:12px 16px;background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
   .ctrl{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px}
   .ctrl label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
   .row{display:flex;gap:8px;align-items:center}
-  input[type="text"], input[type="number"], select{
-    width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
-    border-radius:10px;padding:10px 12px;font-size:14px;outline:none
-  }
-  input[type="range"]{width:100%}
+  input[type="text"],input[type="number"],select{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;outline:none}
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .chip{display:inline-flex;gap:6px;align-items:center;background:var(--chipBg);border:1px solid var(--chipBorder);border-radius:999px;padding:5px 10px;font-size:12px}
   .chip button{all:unset;cursor:pointer;color:#4f79ff}
@@ -69,7 +56,7 @@
   tbody td{padding:var(--cell-pad-y) var(--cell-pad-x);font-size:var(--table-font)}
   tbody tr td:first-child{border-top-left-radius:var(--cell-radius);border-bottom-left-radius:var(--cell-radius)}
   tbody tr td:last-child{border-top-right-radius:var(--cell-radius);border-bottom-right-radius:var(--cell-radius)}
-  .mono{font-variant-numeric:tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+  .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
   .muted{color:var(--muted)}
   .coinCell{display:flex;align-items:center;gap:10px}
   .coinSym{font-weight:800}
@@ -87,18 +74,20 @@
 <body>
 <header>
   <div>
-    <h1>Arbitraj Radarı — Binance TR ⇄ Binance (TL)</h1>
+    <h1>Arbitraj Radarı — Binance TR ⇄ Binance (WebSocket)</h1>
     <div class="sub">
       <span id="usdBox">USDT→TRY: <span id="usdtry" class="mono">—</span></span>
       · Son: <span id="last" class="mono">—</span>
-      · <span id="latency" class="mono">—ms</span>
+      · Güncelleme: <span id="updateCount" class="mono">0</span>/sn
     </div>
   </div>
   <div class="rightBox">
-    <div id="btcBox" class="sub">BTCUSDT: <span id="btc" class="mono">—</span></div>
+    <span id="wsTR" class="wsStatus disconnected">TR: ●</span>
+    <span id="wsGlobal" class="wsStatus disconnected">Global: ●</span>
+    <div id="btcBox" class="sub">BTC: <span id="btc" class="mono">—</span></div>
     <button id="toggleHi" class="btn ghost">En Yüksek Fark: Açık</button>
     <button id="toggleCustom" class="btn ghost">Kişiselleştir: Kapalı</button>
-    <div class="sub">İzlenen: <span id="cnt">0</span> · Hata: <span id="err">0</span></div>
+    <div class="sub">İzlenen: <span id="cnt">0</span></div>
   </div>
 </header>
 <div id="anchorTop"></div>
@@ -114,19 +103,11 @@
   <div class="ctrl">
     <label>Coin Ekle / Çıkar</label>
     <div class="row">
-      <input id="coinIn" type="text" placeholder="Örn: ZIL, XAI, MINA"/>
+      <input id="coinIn" type="text" placeholder="Örn: BTC, ETH, XRP"/>
       <button id="add" class="btn">Ekle</button>
       <button id="clear" class="btn ghost">Temizle</button>
     </div>
     <div id="chips" class="chips"></div>
-  </div>
-  <div class="ctrl">
-    <label>Yenileme Aralığı (0.1–4.0 sn)</label>
-    <div class="row">
-      <input id="rng" type="range" min="100" max="4000" step="100">
-      <div class="mono" id="rngLbl">—</div>
-    </div>
-    <div class="muted" style="font-size:12px;margin-top:6px">Paralel fetch + WebSocket desteği</div>
   </div>
   <div class="ctrl">
     <label>Min. % Fark (filtre)</label>
@@ -143,7 +124,13 @@
         <option value="light">Açık</option>
       </select>
     </div>
-    <div class="muted" style="font-size:12px;margin-top:6px">Arka planı beyaz yapmak için "Açık" temayı seç.</div>
+  </div>
+  <div class="ctrl">
+    <label>Bağlantı</label>
+    <div class="row">
+      <button id="reconnect" class="btn">Yeniden Bağlan</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">WebSocket: Real-time ~100ms</div>
   </div>
 </section>
 <section id="customWrap" class="customWrap hidden">
@@ -154,35 +141,15 @@
       <div><div class="rowLabel">Satır İç Boşluk (X)</div><div class="kv"><input id="ui_padX" type="range" min="6" max="24" step="1"><span class="val" id="ui_padX_val"></span></div></div>
     </div>
     <div class="grid3">
-      <div><div class="rowLabel">Satır Boşluğu (Gap)</div><div class="kv"><input id="ui_rowGap" type="range" min="0" max="20" step="1"><span class="val" id="ui_rowGap_val"></span></div></div>
+      <div><div class="rowLabel">Satır Boşluğu</div><div class="kv"><input id="ui_rowGap" type="range" min="0" max="20" step="1"><span class="val" id="ui_rowGap_val"></span></div></div>
       <div><div class="rowLabel">Köşe Radius</div><div class="kv"><input id="ui_radius" type="range" min="0" max="24" step="1"><span class="val" id="ui_radius_val"></span></div></div>
-      <div><div class="rowLabel">Tablo Genişliği (px)</div><div class="kv"><input id="ui_maxW" type="range" min="800" max="1600" step="10"><span class="val" id="ui_maxW_val"></span></div></div>
-    </div>
-    <div>
-      <div class="rowLabel">Sütun Genişlikleri (%) — toplam 100</div>
-      <div class="grid4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-        <div class="kv"><span class="val" style="min-width:auto">Coin</span><input id="ui_colCoin" type="number" min="10" max="60" step="1" style="width:80px"></div>
-        <div class="kv"><span class="val" style="min-width:auto">AL</span><input id="ui_colAl" type="number" min="10" max="60" step="1" style="width:80px"></div>
-        <div class="kv"><span class="val" style="min-width:auto">SAT</span><input id="ui_colSat" type="number" min="10" max="60" step="1" style="width:80px"></div>
-        <div class="kv"><span class="val" style="min-width:auto">% Fark</span><input id="ui_colPct" type="number" min="10" max="60" step="1" style="width:80px"></div>
-      </div>
-      <div class="muted" id="ui_colSum" style="font-size:12px;margin-top:4px"></div>
+      <div><div class="rowLabel">Tablo Genişliği</div><div class="kv"><input id="ui_maxW" type="range" min="800" max="1600" step="10"><span class="val" id="ui_maxW_val"></span></div></div>
     </div>
     <div class="grid2">
-      <div><div class="rowLabel">En Yüksek Fark Kartı Yazı Boyutu</div><div class="kv"><input id="ui_cardFont" type="range" min="16" max="36" step="1"><span class="val" id="ui_cardFont_val"></span></div></div>
-      <div><div class="rowLabel">En Yüksek Fark Kartı Konumu</div>
-        <select id="ui_hiPos">
-          <option value="top">Üstte (Başlık altında)</option>
-          <option value="afterControls">Kontrollerin altında</option>
-          <option value="afterTable">Tablonun altında</option>
-          <option value="hidden">Gizli</option>
-        </select>
+      <div><div class="rowLabel">Kart Yazı Boyutu</div><div class="kv"><input id="ui_cardFont" type="range" min="16" max="36" step="1"><span class="val" id="ui_cardFont_val"></span></div></div>
+      <div><div class="rowLabel">Kart Konumu</div>
+        <select id="ui_hiPos"><option value="top">Üstte</option><option value="afterControls">Kontrollerin altında</option><option value="hidden">Gizli</option></select>
       </div>
-    </div>
-    <div class="grid3">
-      <label class="kv" style="gap:6px"><input id="ui_showBTC" type="checkbox"> BTC Fiyatını Göster</label>
-      <label class="kv" style="gap:6px"><input id="ui_showUSDT" type="checkbox" checked> USDT→TRY'yi Göster</label>
-      <div></div>
     </div>
     <div class="footerBtns"><button id="ui_reset" class="btn ghost">Varsayılanlara Dön</button></div>
   </div>
@@ -191,386 +158,435 @@
 <section class="tableWrap">
   <table>
     <colgroup>
-      <col id="colCoin" style="width:var(--col-coin);">
-      <col id="colAl" style="width:var(--col-al);">
-      <col id="colSat" style="width:var(--col-sat);">
-      <col id="colPct" style="width:var(--col-pct);">
+      <col style="width:var(--col-coin);"><col style="width:var(--col-al);"><col style="width:var(--col-sat);"><col style="width:var(--col-pct);">
     </colgroup>
-    <thead><tr><th style="text-align:left">Coin</th><th>AL</th><th>SAT</th><th>% Fark</th></tr></thead>
+    <thead><tr><th style="text-align:left">Coin</th><th>AL (Düşük)</th><th>SAT (Yüksek)</th><th>% Fark</th></tr></thead>
     <tbody id="tbody"></tbody>
   </table>
 </section>
-<div id="anchorAfterTable"></div>
 <script>
 const $ = s => document.querySelector(s);
 const LS = {
-  get(key, def){ try{ const v = localStorage.getItem(key); return v==null ? def : JSON.parse(v); }catch{ return def; } },
+  get(key, def){ try{ return JSON.parse(localStorage.getItem(key)) ?? def; }catch{ return def; } },
   set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
 };
-function norm(sym){
-  if(!sym) return '';
-  return sym.trim().toUpperCase().replaceAll('İ','I').replaceAll('Ç','C').replaceAll('Ğ','G').replaceAll('Ö','O').replaceAll('Ş','S').replaceAll('Ü','U');
-}
-function fmtFixedTR(n, d=2){ if(n==null || !isFinite(n)) return '—'; return Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d, maximumFractionDigits:d}); }
-function fmtPctTR(n, d=2){ if(n==null || !isFinite(n)) return '—'; return '%'+Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d, maximumFractionDigits:d}); }
-function fmt4(n){ return (n==null||!isFinite(n)) ? '—' : Number(n).toFixed(4); }
-function nowStr(){ return new Date().toLocaleTimeString('tr-TR'); }
 
+// ====== STATE ======
 let watched = new Set(LS.get('arbi:watched', []));
-let refreshMs = Number(LS.get('arbi:interval', 500));
-let minPctFilter = Number(LS.get('arbi:minpct', 0.00));
+let minPctFilter = Number(LS.get('arbi:minpct', 0));
 let themeMode = LS.get('arbi:theme', 'dark');
 let hiOn = LS.get('arbi:hiOn', true);
+const UI_DEFAULTS = { tableFont:18, padY:12, padX:10, rowGap:6, radius:12, maxW:1100, cardFont:22, hiPos:'top' };
+let UI = { ...UI_DEFAULTS, ...LS.get('arbi:UI', {}) };
 
-const UI_DEFAULTS = {
-  tableFont: 18, padY: 12, padX: 10, rowGap: 6, radius: 12, maxW: 1100,
-  col: { coin:28, al:27, sat:27, pct:18 }, cardFont: 22, hiPos: 'top', showBTC: true, showUSDT: true
+// ====== PRICE DATA ======
+const priceData = {
+  // sym -> { trBid, trAsk, globalBid, globalAsk }
 };
-let UI = Object.assign({}, UI_DEFAULTS, LS.get('arbi:UI', UI_DEFAULTS));
-if(!UI.col) UI.col = { coin:28, al:27, sat:27, pct:18 };
+let usdtry = null;
+let updateCounter = 0;
+let lastSecondUpdates = 0;
 
-let timer = null, updating = false, errors = 0, usdtry = null;
+// ====== WebSocket Connections ======
+let wsTR = null;
+let wsGlobal = null;
 
-const elUsd = $('#usdtry'), elUsdBox = $('#usdBox'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#err'),
-      elBody = $('#tbody'), elRngLbl = $('#rngLbl'), elRng = $('#rng'), elMin = $('#minPct'),
-      elThemeSel = $('#themeSel'), elBtc = $('#btc'), elBtcBox = $('#btcBox'),
-      elHiWrap = $('#hiWrap'), elHiCoin = $('#hiCoin'), elHiAct = $('#hiAct'),
-      elHiPrice = $('#hiPrice'), elHiPct = $('#hiPct'), elHiToggle = $('#toggleHi'),
-      elCustomWrap = $('#customWrap'), elCustomToggle = $('#toggleCustom'), elLatency = $('#latency');
+// Binance TR WebSocket: wss://stream-cloud.binance.tr/ws/<stream>
+// Binance Global WebSocket: wss://stream.binance.com:9443/ws/<stream>
+const WS_TR_BASE = 'wss://stream-cloud.binance.tr/stream?streams=';
+const WS_GLOBAL_BASE = 'wss://stream.binance.com:9443/stream?streams=';
 
-// ====== Binance TR API Endpoints (dokümanasyona göre) ======
-// Binance TR: https://api.binance.me/api/v3/depth?symbol=BTCTRY (sembol _ olmadan)
-// Binance Global: https://api.binance.com/api/v3/ticker/bookTicker?symbol=BTCUSDT
-const BINANCE_TR_DEPTH = 'https://api.binance.me/api/v3/depth';
-const BINANCE_GLOBAL_BOOK = 'https://api.binance.com/api/v3/ticker/bookTicker';
-const BINANCE_BTC_PRICE = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
-
-// Paralel fetch için AbortController
-let abortController = null;
-
-async function jget(url, signal){
-  const res = await fetch(url, {cache:'no-store', signal});
-  if(!res.ok) throw new Error('HTTP '+res.status);
-  return res.json();
+function norm(sym){
+  if(!sym) return '';
+  return sym.trim().toUpperCase().replace(/İ/g,'I').replace(/[ÇĞÖŞÜ]/g,c=>({Ç:'C',Ğ:'G',Ö:'O',Ş:'S',Ü:'U'}[c]||c));
 }
 
-// Binance TR depth response parser (bids/asks array)
-function parseDepth(data){
-  if(!data || !data.bids || !data.asks || !data.bids.length || !data.asks.length) return {bid:NaN, ask:NaN};
-  // En iyi bid = en yüksek alım fiyatı (ilk eleman)
-  // En iyi ask = en düşük satım fiyatı (ilk eleman)
-  const bid = parseFloat(data.bids[0][0]);
-  const ask = parseFloat(data.asks[0][0]);
-  return { bid, ask };
+function fmtTR(n, d=2){ return n==null||!isFinite(n)?'—':Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtPct(n){ return n==null||!isFinite(n)?'—':'%'+fmtTR(n,2); }
+function fmt4(n){ return n==null||!isFinite(n)?'—':Number(n).toFixed(4); }
+function nowStr(){ return new Date().toLocaleTimeString('tr-TR'); }
+
+// ====== WebSocket Management ======
+function buildStreams(symbols, suffix){
+  // suffix: 'try' for TR, 'usdt' for Global
+  // Stream format: btctry@depth5@100ms veya btcusdt@bookTicker
+  return symbols.map(s => {
+    const sym = s.toLowerCase() + suffix;
+    return suffix === 'try' ? `${sym}@depth5@100ms` : `${sym}@bookTicker`;
+  });
 }
 
-// Binance Global bookTicker parser
-function parseBookTicker(data){
-  if(!data || !data.bidPrice || !data.askPrice) return {bid:NaN, ask:NaN};
-  return { bid: parseFloat(data.bidPrice), ask: parseFloat(data.askPrice) };
-}
-
-async function tick(){
-  if(updating) return;
-  updating = true;
-  const startTime = performance.now();
+function connectTR(){
+  if(wsTR && wsTR.readyState === WebSocket.OPEN) wsTR.close();
   
-  // Önceki istekleri iptal et
-  if(abortController) abortController.abort();
-  abortController = new AbortController();
-  const signal = abortController.signal;
-  
-  try{
-    // BTC canlı
-    if(UI.showBTC){
-      jget(BINANCE_BTC_PRICE, signal).then(btc => {
-        const p = parseFloat(btc.price);
-        if(isFinite(p)) elBtc.textContent = fmtFixedTR(p, 2);
-      }).catch(()=>{});
-    }
-
-    if(watched.size===0){
-      elBody.innerHTML = '';
-      updateHighlight([]);
-      elLast.textContent = nowStr();
-      updating = false;
-      return;
-    }
-
-    // USDT/TRY - Binance TR'den depth ile al
-    try{
-      const usdtDepth = await jget(BINANCE_TR_DEPTH+'?symbol=USDTTRY&limit=5', signal);
-      const usdtBest = parseDepth(usdtDepth);
-      if(isFinite(usdtBest.bid)) usdtry = usdtBest.bid;
-      if(UI.showUSDT) elUsd.textContent = fmtFixedTR(usdtry, 4);
-    }catch(e){}
-
-    const syms = Array.from(watched);
-    
-    // TÜM İSTEKLERİ PARALEL OLARAK BAŞLAT (maksimum hız)
-    const promises = syms.map(async sym=>{
-      try{
-        // Paralel: Binance TR (TRY) + Binance Global (USDT) aynı anda
-        const [trDepth, globalBook] = await Promise.all([
-          jget(BINANCE_TR_DEPTH+'?symbol='+sym+'TRY&limit=5', signal),
-          jget(BINANCE_GLOBAL_BOOK+'?symbol='+sym+'USDT', signal)
-        ]);
-        
-        const trBest = parseDepth(trDepth);
-        const globalBest = parseBookTicker(globalBook);
-
-        const mul = (usdtry!=null && isFinite(usdtry)) ? usdtry : 1;
-        const bBidTL = globalBest.bid * mul;
-        const bAskTL = globalBest.ask * mul;
-
-        const diff1 = trBest.bid - bAskTL; // Binance'den al, Binance TR'de sat
-        const diff2 = bBidTL - trBest.ask; // Binance TR'den al, Binance'de sat
-
-        let show=false, low=0, high=0, pct=0, lowSrc='', highSrc='';
-        let binanceTRAction=null, binanceTRPrice=null;
-
-        if((diff1>0 || diff2>0) && isFinite(trBest.bid) && isFinite(trBest.ask) && isFinite(bBidTL) && isFinite(bAskTL)){
-          show = true;
-          if(diff1 > diff2){
-            pct = (diff1 / bAskTL) * 100;
-            low = bAskTL; high = trBest.bid; lowSrc='Binance'; highSrc='Binance TR';
-            binanceTRAction = 'SAT'; binanceTRPrice = trBest.bid;
-          }else{
-            pct = (diff2 / trBest.ask) * 100;
-            low = trBest.ask; high = bBidTL; lowSrc='Binance TR'; highSrc='Binance';
-            binanceTRAction = 'AL'; binanceTRPrice = trBest.ask;
-          }
-        }
-        return {sym, show, low, high, pct, lowSrc, highSrc, binanceTRAction, binanceTRPrice};
-      }catch(e){
-        return {sym, show:false, low:0, high:0, pct:0, lowSrc:'', highSrc:'', binanceTRAction:null, binanceTRPrice:null};
-      }
-    });
-
-    let rows = await Promise.all(promises);
-    rows = rows.filter(r => r && r.show && isFinite(r.pct) && r.pct >= (Number(minPctFilter)||0));
-    rows.sort((a,b)=> b.pct - a.pct);
-    draw(rows);
-    updateHighlight(rows);
-
-    const endTime = performance.now();
-    elLatency.textContent = Math.round(endTime - startTime) + 'ms';
-    elLast.textContent = nowStr();
-  }catch(e){
-    if(e.name !== 'AbortError'){
-      errors++; $('#err').textContent = errors;
-    }
-  }finally{
-    updating = false;
+  const symbols = Array.from(watched);
+  if(symbols.length === 0) {
+    $('#wsTR').className = 'wsStatus disconnected';
+    $('#wsTR').textContent = 'TR: ○';
+    return;
   }
+  
+  // USDT/TRY için de stream ekle
+  const streams = [...buildStreams(symbols, 'try'), 'usdttry@depth5@100ms'];
+  const url = WS_TR_BASE + streams.join('/');
+  
+  $('#wsTR').className = 'wsStatus connecting';
+  $('#wsTR').textContent = 'TR: ...';
+  
+  wsTR = new WebSocket(url);
+  
+  wsTR.onopen = () => {
+    $('#wsTR').className = 'wsStatus connected';
+    $('#wsTR').textContent = 'TR: ●';
+  };
+  
+  wsTR.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if(msg.stream && msg.data) {
+        const stream = msg.stream;
+        const data = msg.data;
+        
+        // usdttry@depth5@100ms
+        if(stream.startsWith('usdttry@')){
+          if(data.bids && data.bids[0]) {
+            usdtry = parseFloat(data.bids[0][0]);
+            $('#usdtry').textContent = fmtTR(usdtry, 4);
+          }
+          return;
+        }
+        
+        // xxxxtry@depth5@100ms
+        const match = stream.match(/^([a-z]+)try@/);
+        if(match){
+          const sym = match[1].toUpperCase();
+          if(!priceData[sym]) priceData[sym] = {};
+          if(data.bids && data.bids[0]) priceData[sym].trBid = parseFloat(data.bids[0][0]);
+          if(data.asks && data.asks[0]) priceData[sym].trAsk = parseFloat(data.asks[0][0]);
+          updateCounter++;
+          scheduleRender();
+        }
+      }
+    } catch(err){}
+  };
+  
+  wsTR.onclose = () => {
+    $('#wsTR').className = 'wsStatus disconnected';
+    $('#wsTR').textContent = 'TR: ○';
+    setTimeout(connectTR, 3000);
+  };
+  
+  wsTR.onerror = () => {
+    $('#wsTR').className = 'wsStatus disconnected';
+    $('#wsTR').textContent = 'TR: ✗';
+  };
 }
 
-function draw(rows){
+function connectGlobal(){
+  if(wsGlobal && wsGlobal.readyState === WebSocket.OPEN) wsGlobal.close();
+  
+  const symbols = Array.from(watched);
+  if(symbols.length === 0) {
+    $('#wsGlobal').className = 'wsStatus disconnected';
+    $('#wsGlobal').textContent = 'Global: ○';
+    return;
+  }
+  
+  // bookTicker for each symbol + btcusdt for BTC price
+  const streams = [...buildStreams(symbols, 'usdt'), 'btcusdt@ticker'];
+  const url = WS_GLOBAL_BASE + streams.join('/');
+  
+  $('#wsGlobal').className = 'wsStatus connecting';
+  $('#wsGlobal').textContent = 'Global: ...';
+  
+  wsGlobal = new WebSocket(url);
+  
+  wsGlobal.onopen = () => {
+    $('#wsGlobal').className = 'wsStatus connected';
+    $('#wsGlobal').textContent = 'Global: ●';
+  };
+  
+  wsGlobal.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if(msg.stream && msg.data) {
+        const stream = msg.stream;
+        const data = msg.data;
+        
+        // btcusdt@ticker
+        if(stream === 'btcusdt@ticker'){
+          if(data.c) $('#btc').textContent = fmtTR(parseFloat(data.c), 2);
+          return;
+        }
+        
+        // xxxxusdt@bookTicker
+        const match = stream.match(/^([a-z]+)usdt@bookTicker/);
+        if(match){
+          const sym = match[1].toUpperCase();
+          if(!priceData[sym]) priceData[sym] = {};
+          if(data.b) priceData[sym].globalBid = parseFloat(data.b);
+          if(data.a) priceData[sym].globalAsk = parseFloat(data.a);
+          updateCounter++;
+          scheduleRender();
+        }
+      }
+    } catch(err){}
+  };
+  
+  wsGlobal.onclose = () => {
+    $('#wsGlobal').className = 'wsStatus disconnected';
+    $('#wsGlobal').textContent = 'Global: ○';
+    setTimeout(connectGlobal, 3000);
+  };
+  
+  wsGlobal.onerror = () => {
+    $('#wsGlobal').className = 'wsStatus disconnected';
+    $('#wsGlobal').textContent = 'Global: ✗';
+  };
+}
+
+// ====== Render (throttled) ======
+let renderScheduled = false;
+function scheduleRender(){
+  if(renderScheduled) return;
+  renderScheduled = true;
+  requestAnimationFrame(() => {
+    renderScheduled = false;
+    render();
+  });
+}
+
+function render(){
+  const rows = [];
+  const mul = usdtry && isFinite(usdtry) ? usdtry : 1;
+  
+  for(const sym of watched){
+    const d = priceData[sym];
+    if(!d) continue;
+    
+    const trBid = d.trBid;
+    const trAsk = d.trAsk;
+    const globalBidTL = d.globalBid * mul;
+    const globalAskTL = d.globalAsk * mul;
+    
+    if(!isFinite(trBid) || !isFinite(trAsk) || !isFinite(globalBidTL) || !isFinite(globalAskTL)) continue;
+    
+    // diff1: Binance'den al (globalAsk), TR'de sat (trBid)
+    const diff1 = trBid - globalAskTL;
+    // diff2: TR'den al (trAsk), Binance'de sat (globalBid)
+    const diff2 = globalBidTL - trAsk;
+    
+    if(diff1 <= 0 && diff2 <= 0) continue;
+    
+    let low, high, pct, lowSrc, highSrc, trAction, trPrice;
+    
+    if(diff1 > diff2){
+      pct = (diff1 / globalAskTL) * 100;
+      low = globalAskTL; high = trBid;
+      lowSrc = 'Binance'; highSrc = 'Binance TR';
+      trAction = 'SAT'; trPrice = trBid;
+    } else {
+      pct = (diff2 / trAsk) * 100;
+      low = trAsk; high = globalBidTL;
+      lowSrc = 'Binance TR'; highSrc = 'Binance';
+      trAction = 'AL'; trPrice = trAsk;
+    }
+    
+    if(pct >= minPctFilter){
+      rows.push({ sym, low, high, pct, lowSrc, highSrc, trAction, trPrice });
+    }
+  }
+  
+  rows.sort((a,b) => b.pct - a.pct);
+  drawTable(rows);
+  updateHighlight(rows);
+  $('#last').textContent = nowStr();
+}
+
+function drawTable(rows){
+  const tbody = $('#tbody');
   const frag = document.createDocumentFragment();
-  rows.forEach(r=>{
+  
+  for(const r of rows){
     const tr = document.createElement('tr');
+    
     const tdCoin = document.createElement('td');
     tdCoin.className = 'coinCell';
-    const sym = document.createElement('span'); sym.className='coinSym'; sym.textContent = r.sym;
-    tdCoin.appendChild(sym);
+    tdCoin.innerHTML = `<span class="coinSym">${r.sym}</span>`;
     tr.appendChild(tdCoin);
-    const tdL = document.createElement('td'); tdL.className='mono alCell';
-    tdL.textContent = fmt4(r.low);
-    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green';
-    tr.appendChild(tdL);
-    const tdH = document.createElement('td'); tdH.className='mono satCell';
-    tdH.textContent = fmt4(r.high);
-    tdH.style.background = (r.highSrc==='Binance TR') ? 'green' : 'orange';
-    tr.appendChild(tdH);
-    const tdP = document.createElement('td'); tdP.className='mono pctCell';
-    tdP.textContent = fmtPctTR(r.pct, 2);
-    tr.appendChild(tdP);
+    
+    const tdLow = document.createElement('td');
+    tdLow.className = 'mono alCell';
+    tdLow.textContent = fmt4(r.low);
+    tdLow.style.background = r.lowSrc === 'Binance' ? '#b45309' : '#15803d';
+    tr.appendChild(tdLow);
+    
+    const tdHigh = document.createElement('td');
+    tdHigh.className = 'mono satCell';
+    tdHigh.textContent = fmt4(r.high);
+    tdHigh.style.background = r.highSrc === 'Binance TR' ? '#15803d' : '#b45309';
+    tr.appendChild(tdHigh);
+    
+    const tdPct = document.createElement('td');
+    tdPct.className = 'mono pctCell';
+    tdPct.textContent = fmtPct(r.pct);
+    tr.appendChild(tdPct);
+    
     frag.appendChild(tr);
-  });
-  elBody.innerHTML = '';
-  elBody.appendChild(frag);
+  }
+  
+  tbody.innerHTML = '';
+  tbody.appendChild(frag);
 }
 
 function updateHighlight(rows){
-  if(!hiOn || UI.hiPos==='hidden'){ elHiWrap.classList.add('hidden'); return; }
-  elHiWrap.classList.remove('hidden');
+  const wrap = $('#hiWrap');
+  if(!hiOn || UI.hiPos === 'hidden'){ wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
   placeHi(UI.hiPos);
+  
   if(!rows.length){
-    elHiCoin.textContent='—'; elHiAct.textContent='BİNANCE TR • —'; elHiPrice.textContent='—'; elHiPct.textContent='—';
+    $('#hiCoin').textContent = '—';
+    $('#hiAct').textContent = 'BİNANCE TR • —';
+    $('#hiPrice').textContent = '—';
+    $('#hiPct').textContent = '—';
     return;
   }
+  
   const r = rows[0];
-  elHiCoin.textContent = r.sym;
-  const act = r.binanceTRAction === 'AL' ? 'AL' : 'SAT';
-  elHiAct.textContent = 'BİNANCE TR • '+act;
-  elHiPrice.textContent = fmtFixedTR(r.binanceTRPrice, 2)+' TL';
-  elHiPct.textContent = fmtPctTR(r.pct, 2);
-}
-
-function applyTheme(mode){
-  const html = document.documentElement;
-  html.classList.remove('theme-dark','theme-light');
-  html.classList.add(mode==='light' ? 'theme-light' : 'theme-dark');
-  $('#themeSel').value = (mode==='light' ? 'light' : 'dark');
-  LS.set('arbi:theme', (mode==='light' ? 'light' : 'dark'));
-}
-
-function applyUI(u){
-  document.documentElement.style.setProperty('--table-font', u.tableFont+'px');
-  document.documentElement.style.setProperty('--cell-pad-y', u.padY+'px');
-  document.documentElement.style.setProperty('--cell-pad-x', u.padX+'px');
-  document.documentElement.style.setProperty('--row-gap', u.rowGap+'px');
-  document.documentElement.style.setProperty('--cell-radius', u.radius+'px');
-  document.documentElement.style.setProperty('--container-max', u.maxW+'px');
-  document.documentElement.style.setProperty('--col-coin', (u.col.coin||28)+'%');
-  document.documentElement.style.setProperty('--col-al', (u.col.al||27)+'%');
-  document.documentElement.style.setProperty('--col-sat', (u.col.sat||27)+'%');
-  document.documentElement.style.setProperty('--col-pct', (u.col.pct||18)+'%');
-  document.documentElement.style.setProperty('--card-font', u.cardFont+'px');
-  elBtcBox.style.display = u.showBTC ? '' : 'none';
-  elUsdBox.style.display = u.showUSDT ? '' : 'none';
-  placeHi(u.hiPos);
-  $('#ui_tableFont_val').textContent = u.tableFont+'px';
-  $('#ui_padY_val').textContent = u.padY+'px';
-  $('#ui_padX_val').textContent = u.padX+'px';
-  $('#ui_rowGap_val').textContent = u.rowGap+'px';
-  $('#ui_radius_val').textContent = u.radius+'px';
-  $('#ui_maxW_val').textContent = u.maxW+'px';
-  $('#ui_cardFont_val').textContent = u.cardFont+'px';
-  $('#ui_tableFont').value = u.tableFont;
-  $('#ui_padY').value = u.padY;
-  $('#ui_padX').value = u.padX;
-  $('#ui_rowGap').value = u.rowGap;
-  $('#ui_radius').value = u.radius;
-  $('#ui_maxW').value = u.maxW;
-  $('#ui_cardFont').value = u.cardFont;
-  $('#ui_colCoin').value = u.col.coin;
-  $('#ui_colAl').value = u.col.al;
-  $('#ui_colSat').value = u.col.sat;
-  $('#ui_colPct').value = u.col.pct;
-  $('#ui_hiPos').value = u.hiPos;
-  $('#ui_showBTC').checked = !!u.showBTC;
-  $('#ui_showUSDT').checked = !!u.showUSDT;
-  const sum = (+u.col.coin)+(+u.col.al)+(+u.col.sat)+(+u.col.pct);
-  const ok = Math.round(sum)===100;
-  $('#ui_colSum').textContent = 'Toplam: '+sum.toFixed(0)+'% ' + (ok?'✓':'(100 olmalı)');
-}
-
-function saveUI(){ LS.set('arbi:UI', UI); }
-function normalizeCols(){
-  let {coin,al,sat,pct} = UI.col;
-  let sum = coin+al+sat+pct;
-  if(sum<=0) { UI.col={coin:28,al:27,sat:27,pct:18}; return; }
-  UI.col.coin = +(coin*100/sum).toFixed(0);
-  UI.col.al = +(al*100/sum).toFixed(0);
-  UI.col.sat = +(sat*100/sum).toFixed(0);
-  UI.col.pct = 100 - UI.col.coin - UI.col.al - UI.col.sat;
+  $('#hiCoin').textContent = r.sym;
+  $('#hiAct').textContent = `BİNANCE TR • ${r.trAction}`;
+  $('#hiPrice').textContent = `${fmtTR(r.trPrice, 2)} TL`;
+  $('#hiPct').textContent = fmtPct(r.pct);
 }
 
 function placeHi(pos){
-  const wrap = elHiWrap;
-  if(pos==='hidden'){ wrap.classList.add('hidden'); return; }
+  const wrap = $('#hiWrap');
+  if(pos === 'hidden'){ wrap.classList.add('hidden'); return; }
   wrap.classList.remove('hidden');
-  if(pos==='top') $('#anchorTop').after(wrap);
-  else if(pos==='afterControls') $('#anchorAfterControls').after(wrap);
-  else if(pos==='afterTable') $('#anchorAfterTable').after(wrap);
+  if(pos === 'top') $('#anchorTop').after(wrap);
+  else if(pos === 'afterControls') $('#anchorAfterControls').after(wrap);
 }
 
+// ====== UI ======
+function applyTheme(mode){
+  document.documentElement.className = mode === 'light' ? 'theme-light' : 'theme-dark';
+  $('#themeSel').value = mode;
+  LS.set('arbi:theme', mode);
+}
+
+function applyUI(u){
+  const root = document.documentElement.style;
+  root.setProperty('--table-font', u.tableFont+'px');
+  root.setProperty('--cell-pad-y', u.padY+'px');
+  root.setProperty('--cell-pad-x', u.padX+'px');
+  root.setProperty('--row-gap', u.rowGap+'px');
+  root.setProperty('--cell-radius', u.radius+'px');
+  root.setProperty('--container-max', u.maxW+'px');
+  root.setProperty('--card-font', u.cardFont+'px');
+  
+  $('#ui_tableFont').value = u.tableFont; $('#ui_tableFont_val').textContent = u.tableFont+'px';
+  $('#ui_padY').value = u.padY; $('#ui_padY_val').textContent = u.padY+'px';
+  $('#ui_padX').value = u.padX; $('#ui_padX_val').textContent = u.padX+'px';
+  $('#ui_rowGap').value = u.rowGap; $('#ui_rowGap_val').textContent = u.rowGap+'px';
+  $('#ui_radius').value = u.radius; $('#ui_radius_val').textContent = u.radius+'px';
+  $('#ui_maxW').value = u.maxW; $('#ui_maxW_val').textContent = u.maxW+'px';
+  $('#ui_cardFont').value = u.cardFont; $('#ui_cardFont_val').textContent = u.cardFont+'px';
+  $('#ui_hiPos').value = u.hiPos;
+  placeHi(u.hiPos);
+}
+
+function saveUI(){ LS.set('arbi:UI', UI); }
+
 function renderChips(){
-  const wrap = $('#chips'); wrap.innerHTML='';
-  Array.from(watched).sort().forEach(sym=>{
-    const d = document.createElement('div'); d.className='chip';
-    d.innerHTML = '<span>'+sym+'</span>';
-    const b = document.createElement('button'); b.textContent='×';
-    b.onclick = ()=>{
+  const wrap = $('#chips');
+  wrap.innerHTML = '';
+  for(const sym of [...watched].sort()){
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `<span>${sym}</span>`;
+    const btn = document.createElement('button');
+    btn.textContent = '×';
+    btn.onclick = () => {
       watched.delete(sym);
-      LS.set('arbi:watched', Array.from(watched));
-      $('#cnt').textContent = watched.size; renderChips();
+      delete priceData[sym];
+      LS.set('arbi:watched', [...watched]);
+      renderChips();
+      reconnectAll();
     };
-    d.appendChild(b); wrap.appendChild(d);
-  });
+    chip.appendChild(btn);
+    wrap.appendChild(chip);
+  }
   $('#cnt').textContent = watched.size;
 }
 
-function schedule(ms){
-  refreshMs = Math.max(100, Math.min(4000, ms|0));
-  elRng.value = refreshMs;
-  elRngLbl.textContent = (refreshMs/1000).toFixed(1)+' sn';
-  LS.set('arbi:interval', refreshMs);
-  if(timer) clearInterval(timer);
-  timer = setInterval(tick, refreshMs);
-  tick(); // hemen başlat
+function reconnectAll(){
+  connectTR();
+  connectGlobal();
 }
 
-$('#add').onclick = ()=>{
-  const raw = $('#coinIn').value;
-  const sym = norm(raw);
-  if(sym){
+// ====== Events ======
+$('#add').onclick = () => {
+  const sym = norm($('#coinIn').value);
+  if(sym && !watched.has(sym)){
     watched.add(sym);
-    LS.set('arbi:watched', Array.from(watched));
+    LS.set('arbi:watched', [...watched]);
     renderChips();
-    tick();
+    reconnectAll();
   }
-  $('#coinIn').value='';
+  $('#coinIn').value = '';
 };
-$('#coinIn').addEventListener('keydown',(e)=>{ if(e.key==='Enter') $('#add').click(); });
-$('#clear').onclick = ()=>{
+$('#coinIn').onkeydown = (e) => { if(e.key === 'Enter') $('#add').click(); };
+$('#clear').onclick = () => {
   watched.clear();
+  for(const k in priceData) delete priceData[k];
   LS.set('arbi:watched', []);
-  renderChips(); elBody.innerHTML='';
+  renderChips();
+  reconnectAll();
+  $('#tbody').innerHTML = '';
 };
-elRng.addEventListener('input', e=> schedule(Number(e.target.value)));
-elMin.addEventListener('input', e=>{
-  minPctFilter = Number(e.target.value)||0;
+$('#minPct').oninput = (e) => {
+  minPctFilter = Number(e.target.value) || 0;
   LS.set('arbi:minpct', minPctFilter);
-});
-elThemeSel.addEventListener('change', (e)=> applyTheme(e.target.value));
-elHiToggle.addEventListener('click', ()=>{
+  render();
+};
+$('#themeSel').onchange = (e) => applyTheme(e.target.value);
+$('#toggleHi').onclick = () => {
   hiOn = !hiOn;
   LS.set('arbi:hiOn', hiOn);
-  elHiToggle.textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
-  updateHighlight([]);
-});
-elCustomToggle.addEventListener('click', ()=>{
-  const open = elCustomWrap.classList.toggle('hidden');
-  elCustomToggle.textContent = 'Kişiselleştir: ' + (open ? 'Kapalı' : 'Açık');
-});
-$('#ui_tableFont').oninput = (e)=>{ UI.tableFont=+e.target.value; applyUI(UI); saveUI(); };
-$('#ui_padY').oninput = (e)=>{ UI.padY=+e.target.value; applyUI(UI); saveUI(); };
-$('#ui_padX').oninput = (e)=>{ UI.padX=+e.target.value; applyUI(UI); saveUI(); };
-$('#ui_rowGap').oninput = (e)=>{ UI.rowGap=+e.target.value; applyUI(UI); saveUI(); };
-$('#ui_radius').oninput = (e)=>{ UI.radius=+e.target.value; applyUI(UI); saveUI(); };
-$('#ui_maxW').oninput = (e)=>{ UI.maxW=+e.target.value; applyUI(UI); saveUI(); };
-$('#ui_cardFont').oninput = (e)=>{ UI.cardFont=+e.target.value; applyUI(UI); saveUI(); };
-$('#ui_hiPos').onchange = (e)=>{ UI.hiPos=e.target.value; applyUI(UI); saveUI(); };
-$('#ui_showBTC').onchange = (e)=>{ UI.showBTC=e.target.checked; applyUI(UI); saveUI(); };
-$('#ui_showUSDT').onchange = (e)=>{ UI.showUSDT=e.target.checked; applyUI(UI); saveUI(); };
-['ui_colCoin','ui_colAl','ui_colSat','ui_colPct'].forEach(id=>{
-  $('#'+id).addEventListener('input',(e)=>{
-    const v = Math.max(10, Math.min(60, +e.target.value||0));
-    if(id==='ui_colCoin') UI.col.coin=v;
-    if(id==='ui_colAl') UI.col.al=v;
-    if(id==='ui_colSat') UI.col.sat=v;
-    if(id==='ui_colPct') UI.col.pct=v;
-    normalizeCols();
-    applyUI(UI); saveUI();
-  });
-});
-$('#ui_reset').onclick = ()=>{
-  UI = JSON.parse(JSON.stringify(UI_DEFAULTS));
-  applyUI(UI); saveUI();
+  $('#toggleHi').textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
+  render();
 };
+$('#toggleCustom').onclick = () => {
+  const open = $('#customWrap').classList.toggle('hidden');
+  $('#toggleCustom').textContent = 'Kişiselleştir: ' + (open ? 'Kapalı' : 'Açık');
+};
+$('#reconnect').onclick = reconnectAll;
 
-(function initFromStorage(){
-  applyTheme(themeMode);
-  renderChips();
-  applyUI(UI);
-  $('#minPct').value = isFinite(minPctFilter)? minPctFilter : 0.00;
-  elHiToggle.textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
-  schedule(isFinite(refreshMs) ? refreshMs : 500);
-  elLast.textContent = nowStr();
-})();
-setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
+$('#ui_tableFont').oninput = (e) => { UI.tableFont = +e.target.value; applyUI(UI); saveUI(); };
+$('#ui_padY').oninput = (e) => { UI.padY = +e.target.value; applyUI(UI); saveUI(); };
+$('#ui_padX').oninput = (e) => { UI.padX = +e.target.value; applyUI(UI); saveUI(); };
+$('#ui_rowGap').oninput = (e) => { UI.rowGap = +e.target.value; applyUI(UI); saveUI(); };
+$('#ui_radius').oninput = (e) => { UI.radius = +e.target.value; applyUI(UI); saveUI(); };
+$('#ui_maxW').oninput = (e) => { UI.maxW = +e.target.value; applyUI(UI); saveUI(); };
+$('#ui_cardFont').oninput = (e) => { UI.cardFont = +e.target.value; applyUI(UI); saveUI(); };
+$('#ui_hiPos').onchange = (e) => { UI.hiPos = e.target.value; applyUI(UI); saveUI(); };
+$('#ui_reset').onclick = () => { UI = {...UI_DEFAULTS}; applyUI(UI); saveUI(); };
+
+// ====== Update counter per second ======
+setInterval(() => {
+  lastSecondUpdates = updateCounter;
+  updateCounter = 0;
+  $('#updateCount').textContent = lastSecondUpdates;
+}, 1000);
+
+// ====== Init ======
+applyTheme(themeMode);
+applyUI(UI);
+renderChips();
+$('#minPct').value = minPctFilter;
+$('#toggleHi').textContent = 'En Yüksek Fark: ' + (hiOn ? 'Açık' : 'Kapalı');
+reconnectAll();
 </script>
 </body>
 </html>
