@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Arbitraj Radarı — Paribu ⇄ Binance (WebSocket 100ms)</title>
+<title>Arbitraj Radarı — Paribu ⇄ Binance (WebSocket Fixed)</title>
 <style>
   .theme-dark{
     --bg:#0b1220; --panel:#111a2b; --panel2:#0f1626; --text:#e6edf6;
@@ -32,7 +32,7 @@
   header .rightBox{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .btn{background:var(--accent);color:#091220;border:none;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer;font-size:13px}
   .ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
-  .wsStatus{padding:3px 8px;border-radius:8px;font-size:11px;font-weight:600}
+  .wsStatus{padding:3px 8px;border-radius:8px;font-size:11px;font-weight:600;transition:all 0.3s}
   .wsStatus.connected{background:#22c55e;color:#000}
   .wsStatus.disconnected{background:#ef4444;color:#fff}
   .wsStatus.connecting{background:#f59e0b;color:#000}
@@ -155,12 +155,17 @@ const priceData = {};
 let usdtTryBid = null;
 let updateCounter = 0;
 
-// ====== WebSocket Connections ======
+// ====== WebSocket State ======
 let wsParibu = null;
 let wsBinance = null;
+let paribuConnected = false;
+let binanceConnected = false;
+let reconnectTimeout = null;
+let isReconnecting = false;
 
-// Paribu: wss://stream.paribu.com
-// Binance: wss://stream.binance.com:9443/stream?streams=...
+// Debounce için
+let reconnectDebounceTimer = null;
+const RECONNECT_DEBOUNCE_MS = 500; // Yarım saniye bekle
 
 function norm(sym){
   if(!sym) return '';
@@ -172,149 +177,257 @@ function fmtPct(n){ return n==null||!isFinite(n)?'—':'%'+fmtTR(n,2); }
 function fmt4(n){ return n==null||!isFinite(n)?'—':Number(n).toFixed(4); }
 function nowStr(){ return new Date().toLocaleTimeString('tr-TR'); }
 
-// ====== PARIBU WebSocket ======
-function connectParibu(){
-  if(wsParibu && wsParibu.readyState === WebSocket.OPEN) wsParibu.close();
+function updateStatusUI(type, status) {
+  const el = type === 'paribu' ? $('#wsParibu') : $('#wsBinance');
+  const name = type === 'paribu' ? 'Paribu' : 'Binance';
   
-  const symbols = Array.from(watched);
-  if(symbols.length === 0) {
-    $('#wsParibu').className = 'wsStatus disconnected';
-    $('#wsParibu').textContent = 'Paribu: ○';
-    return;
+  el.className = 'wsStatus ' + status;
+  if (status === 'connected') {
+    el.textContent = name + ': ●';
+  } else if (status === 'connecting') {
+    el.textContent = name + ': ...';
+  } else {
+    el.textContent = name + ': ○';
   }
-  
-  $('#wsParibu').className = 'wsStatus connecting';
-  $('#wsParibu').textContent = 'Paribu: ...';
-  
-  wsParibu = new WebSocket('wss://stream.paribu.com');
-  
-  wsParibu.onopen = () => {
-    $('#wsParibu').className = 'wsStatus connected';
-    $('#wsParibu').textContent = 'Paribu: ●';
+}
+
+// ====== PARIBU WebSocket ======
+function connectParibu() {
+  return new Promise((resolve, reject) => {
+    const symbols = Array.from(watched);
+    if (symbols.length === 0) {
+      updateStatusUI('paribu', 'disconnected');
+      resolve(false);
+      return;
+    }
     
-    // Subscribe to orderbook channels
-    const channels = symbols.map(s => `orderbook:${s.toLowerCase()}_tl@${updateSpeed}ms`);
-    channels.push(`orderbook:usdt_tl@${updateSpeed}ms`); // USDT/TRY için
+    // Önceki bağlantıyı temizle
+    if (wsParibu) {
+      try {
+        wsParibu.onclose = null; // Otomatik reconnect'i engelle
+        wsParibu.onerror = null;
+        wsParibu.onmessage = null;
+        wsParibu.onopen = null;
+        if (wsParibu.readyState === WebSocket.OPEN || wsParibu.readyState === WebSocket.CONNECTING) {
+          wsParibu.close();
+        }
+      } catch(e) {}
+      wsParibu = null;
+    }
     
-    const subscribeMsg = {
-      method: 'subscribe',
-      channels: channels,
-      id: 'sub_' + Date.now()
-    };
+    paribuConnected = false;
+    updateStatusUI('paribu', 'connecting');
     
-    wsParibu.send(JSON.stringify(subscribeMsg));
-    console.log('Paribu subscribed:', channels);
-  };
-  
-  wsParibu.onmessage = (e) => {
     try {
-      const msg = JSON.parse(e.data);
+      wsParibu = new WebSocket('wss://stream.paribu.com');
       
-      // Orderbook update
-      if(msg.e === 'orderbook' && msg.r){
-        const market = msg.s; // e.g. "usdt_tl", "btc_tl"
-        const bids = msg.r.b; // [[price, amount], ...]
-        const asks = msg.r.a;
+      wsParibu.onopen = () => {
+        paribuConnected = true;
+        updateStatusUI('paribu', 'connected');
         
-        if(market === 'usdt_tl'){
-          // USDT/TRY
-          if(bids && bids[0]) usdtTryBid = parseFloat(bids[0][0]);
-          $('#usdtry').textContent = fmtTR(usdtTryBid, 4);
-        } else {
-          // Coin orderbook (e.g. btc_tl)
-          const sym = market.replace('_tl','').toUpperCase();
-          if(!priceData[sym]) priceData[sym] = {};
-          if(bids && bids[0]) priceData[sym].paribuBid = parseFloat(bids[0][0]);
-          if(asks && asks[0]) priceData[sym].paribuAsk = parseFloat(asks[0][0]);
+        // Subscribe mesajı gönder
+        const channels = symbols.map(s => `orderbook:${s.toLowerCase()}_tl@${updateSpeed}ms`);
+        channels.push(`orderbook:usdt_tl@${updateSpeed}ms`);
+        
+        const subscribeMsg = {
+          method: 'subscribe',
+          channels: channels,
+          id: 'sub_' + Date.now()
+        };
+        
+        // Bağlantı hazır olduğundan emin ol
+        if (wsParibu && wsParibu.readyState === WebSocket.OPEN) {
+          wsParibu.send(JSON.stringify(subscribeMsg));
+          console.log('Paribu subscribed:', channels);
         }
         
-        updateCounter++;
-        scheduleRender();
-      }
-    } catch(err){
-      console.error('Paribu message error:', err);
+        resolve(true);
+      };
+      
+      wsParibu.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          
+          if (msg.e === 'orderbook' && msg.r) {
+            const market = msg.s;
+            const bids = msg.r.b;
+            const asks = msg.r.a;
+            
+            if (market === 'usdt_tl') {
+              if (bids && bids[0]) usdtTryBid = parseFloat(bids[0][0]);
+              $('#usdtry').textContent = fmtTR(usdtTryBid, 4);
+            } else {
+              const sym = market.replace('_tl','').toUpperCase();
+              if (!priceData[sym]) priceData[sym] = {};
+              if (bids && bids[0]) priceData[sym].paribuBid = parseFloat(bids[0][0]);
+              if (asks && asks[0]) priceData[sym].paribuAsk = parseFloat(asks[0][0]);
+            }
+            
+            updateCounter++;
+            scheduleRender();
+          }
+        } catch(err) {}
+      };
+      
+      wsParibu.onclose = () => {
+        paribuConnected = false;
+        updateStatusUI('paribu', 'disconnected');
+        
+        // Otomatik yeniden bağlanma (debounced)
+        if (!isReconnecting) {
+          scheduleReconnect();
+        }
+      };
+      
+      wsParibu.onerror = (err) => {
+        console.error('Paribu WebSocket error:', err);
+        paribuConnected = false;
+        updateStatusUI('paribu', 'disconnected');
+        reject(err);
+      };
+      
+    } catch(err) {
+      updateStatusUI('paribu', 'disconnected');
+      reject(err);
     }
-  };
-  
-  wsParibu.onclose = () => {
-    $('#wsParibu').className = 'wsStatus disconnected';
-    $('#wsParibu').textContent = 'Paribu: ○';
-    setTimeout(connectParibu, 3000);
-  };
-  
-  wsParibu.onerror = () => {
-    $('#wsParibu').className = 'wsStatus disconnected';
-    $('#wsParibu').textContent = 'Paribu: ✗';
-  };
+  });
 }
 
 // ====== BINANCE WebSocket ======
-function connectBinance(){
-  if(wsBinance && wsBinance.readyState === WebSocket.OPEN) wsBinance.close();
-  
-  const symbols = Array.from(watched);
-  if(symbols.length === 0) {
-    $('#wsBinance').className = 'wsStatus disconnected';
-    $('#wsBinance').textContent = 'Binance: ○';
-    return;
+function connectBinance() {
+  return new Promise((resolve, reject) => {
+    const symbols = Array.from(watched);
+    if (symbols.length === 0) {
+      updateStatusUI('binance', 'disconnected');
+      resolve(false);
+      return;
+    }
+    
+    // Önceki bağlantıyı temizle
+    if (wsBinance) {
+      try {
+        wsBinance.onclose = null;
+        wsBinance.onerror = null;
+        wsBinance.onmessage = null;
+        wsBinance.onopen = null;
+        if (wsBinance.readyState === WebSocket.OPEN || wsBinance.readyState === WebSocket.CONNECTING) {
+          wsBinance.close();
+        }
+      } catch(e) {}
+      wsBinance = null;
+    }
+    
+    binanceConnected = false;
+    updateStatusUI('binance', 'connecting');
+    
+    // Binance stream URL oluştur
+    const streams = symbols.map(s => `${s.toLowerCase()}usdt@bookTicker`);
+    streams.push('usdttry@bookTicker');
+    const url = `wss://stream.binance.com:9443/stream?streams=${streams.join('/')}`;
+    
+    try {
+      wsBinance = new WebSocket(url);
+      
+      wsBinance.onopen = () => {
+        binanceConnected = true;
+        updateStatusUI('binance', 'connected');
+        console.log('Binance connected');
+        resolve(true);
+      };
+      
+      wsBinance.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (!msg.stream || !msg.data) return;
+          
+          const stream = msg.stream;
+          const data = msg.data;
+          
+          // xxxxusdt@bookTicker
+          const match = stream.match(/^([a-z0-9]+)usdt@bookTicker$/);
+          if (match) {
+            const sym = match[1].toUpperCase();
+            if (!priceData[sym]) priceData[sym] = {};
+            priceData[sym].binanceBid = parseFloat(data.b);
+            priceData[sym].binanceAsk = parseFloat(data.a);
+            updateCounter++;
+            scheduleRender();
+          }
+        } catch(err) {}
+      };
+      
+      wsBinance.onclose = () => {
+        binanceConnected = false;
+        updateStatusUI('binance', 'disconnected');
+        
+        if (!isReconnecting) {
+          scheduleReconnect();
+        }
+      };
+      
+      wsBinance.onerror = (err) => {
+        console.error('Binance WebSocket error:', err);
+        binanceConnected = false;
+        updateStatusUI('binance', 'disconnected');
+        reject(err);
+      };
+      
+    } catch(err) {
+      updateStatusUI('binance', 'disconnected');
+      reject(err);
+    }
+  });
+}
+
+// ====== Debounced Reconnect ======
+function scheduleReconnect() {
+  if (reconnectDebounceTimer) {
+    clearTimeout(reconnectDebounceTimer);
   }
   
-  // Binance Global - USDT pariteleri için bookTicker
-  const streams = symbols.map(s => `${s.toLowerCase()}usdt@bookTicker`);
-  streams.push('usdttry@bookTicker'); // USDT/TRY karşılaştırma için
-  
-  const url = `wss://stream.binance.com:9443/stream?streams=${streams.join('/')}`;
-  
-  $('#wsBinance').className = 'wsStatus connecting';
-  $('#wsBinance').textContent = 'Binance: ...';
-  
-  wsBinance = new WebSocket(url);
-  
-  wsBinance.onopen = () => {
-    $('#wsBinance').className = 'wsStatus connected';
-    $('#wsBinance').textContent = 'Binance: ●';
-    console.log('Binance connected');
-  };
-  
-  wsBinance.onmessage = (e) => {
-    try {
-      const msg = JSON.parse(e.data);
-      if(!msg.stream || !msg.data) return;
-      
-      const stream = msg.stream;
-      const data = msg.data;
-      
-      // xxxxusdt@bookTicker
-      const match = stream.match(/^([a-z0-9]+)usdt@bookTicker$/);
-      if(match){
-        const sym = match[1].toUpperCase();
-        if(!priceData[sym]) priceData[sym] = {};
-        priceData[sym].binanceBid = parseFloat(data.b); // best bid
-        priceData[sym].binanceAsk = parseFloat(data.a); // best ask
-        updateCounter++;
-        scheduleRender();
-      }
-    } catch(err){
-      console.error('Binance message error:', err);
+  reconnectDebounceTimer = setTimeout(() => {
+    if (!isReconnecting) {
+      reconnectAll();
     }
-  };
+  }, 3000); // 3 saniye bekle
+}
+
+// ====== Connect All (Debounced) ======
+let connectDebounceTimer = null;
+
+function debouncedReconnect() {
+  if (connectDebounceTimer) {
+    clearTimeout(connectDebounceTimer);
+  }
   
-  wsBinance.onclose = () => {
-    $('#wsBinance').className = 'wsStatus disconnected';
-    $('#wsBinance').textContent = 'Binance: ○';
-    setTimeout(connectBinance, 3000);
-  };
+  connectDebounceTimer = setTimeout(() => {
+    reconnectAll();
+  }, RECONNECT_DEBOUNCE_MS);
+}
+
+async function reconnectAll() {
+  if (isReconnecting) return;
+  isReconnecting = true;
   
-  wsBinance.onerror = () => {
-    $('#wsBinance').className = 'wsStatus disconnected';
-    $('#wsBinance').textContent = 'Binance: ✗';
-  };
+  console.log('Reconnecting all WebSockets...');
+  
+  try {
+    // Her ikisini de paralel bağla
+    await Promise.allSettled([
+      connectParibu(),
+      connectBinance()
+    ]);
+  } catch(err) {
+    console.error('Reconnect error:', err);
+  }
+  
+  isReconnecting = false;
 }
 
 // ====== Render ======
 let renderScheduled = false;
-function scheduleRender(){
-  if(renderScheduled) return;
+function scheduleRender() {
+  if (renderScheduled) return;
   renderScheduled = true;
   requestAnimationFrame(() => {
     renderScheduled = false;
@@ -322,40 +435,36 @@ function scheduleRender(){
   });
 }
 
-function render(){
+function render() {
   const rows = [];
   const usdtToTry = usdtTryBid && isFinite(usdtTryBid) ? usdtTryBid : null;
   
-  for(const sym of watched){
+  for (const sym of watched) {
     const d = priceData[sym];
-    if(!d) continue;
+    if (!d) continue;
     
-    const paribuBid = d.paribuBid; // Paribu'da satarken alacağın TL
-    const paribuAsk = d.paribuAsk; // Paribu'da alırken ödeyeceğin TL
-    const binanceBid = d.binanceBid; // Binance'de satarken alacağın USDT
-    const binanceAsk = d.binanceAsk; // Binance'de alırken ödeyeceğin USDT
+    const paribuBid = d.paribuBid;
+    const paribuAsk = d.paribuAsk;
+    const binanceBid = d.binanceBid;
+    const binanceAsk = d.binanceAsk;
     
-    if(!isFinite(paribuBid) || !isFinite(paribuAsk)) continue;
-    if(!isFinite(binanceBid) || !isFinite(binanceAsk)) continue;
-    if(!usdtToTry) continue;
+    if (!isFinite(paribuBid) || !isFinite(paribuAsk)) continue;
+    if (!isFinite(binanceBid) || !isFinite(binanceAsk)) continue;
+    if (!usdtToTry) continue;
     
-    // USDT fiyatlarını TL'ye çevir
     const binanceBidTL = binanceBid * usdtToTry;
     const binanceAskTL = binanceAsk * usdtToTry;
     
-    // Arbitraj hesabı:
-    // diff1: Binance'den al (binanceAskTL), Paribu'da sat (paribuBid)
-    // diff2: Paribu'dan al (paribuAsk), Binance'de sat (binanceBidTL)
-    
+    // diff1: Binance'den al, Paribu'da sat
     const diff1 = paribuBid - binanceAskTL;
+    // diff2: Paribu'dan al, Binance'de sat
     const diff2 = binanceBidTL - paribuAsk;
     
-    if(diff1 <= 0 && diff2 <= 0) continue;
+    if (diff1 <= 0 && diff2 <= 0) continue;
     
     let low, high, pct, lowSrc, highSrc, action, actionPrice;
     
-    if(diff1 > diff2){
-      // Binance'den al, Paribu'da sat daha karlı
+    if (diff1 > diff2) {
       pct = (diff1 / binanceAskTL) * 100;
       low = binanceAskTL;
       high = paribuBid;
@@ -364,7 +473,6 @@ function render(){
       action = 'SAT';
       actionPrice = paribuBid;
     } else {
-      // Paribu'dan al, Binance'de sat daha karlı
       pct = (diff2 / paribuAsk) * 100;
       low = paribuAsk;
       high = binanceBidTL;
@@ -374,7 +482,7 @@ function render(){
       actionPrice = paribuAsk;
     }
     
-    if(pct >= minPctFilter){
+    if (pct >= minPctFilter) {
       rows.push({ sym, low, high, pct, lowSrc, highSrc, action, actionPrice });
     }
   }
@@ -385,11 +493,11 @@ function render(){
   $('#last').textContent = nowStr();
 }
 
-function drawTable(rows){
+function drawTable(rows) {
   const tbody = $('#tbody');
   const frag = document.createDocumentFragment();
   
-  for(const r of rows){
+  for (const r of rows) {
     const tr = document.createElement('tr');
     
     const tdCoin = document.createElement('td');
@@ -421,10 +529,10 @@ function drawTable(rows){
   tbody.appendChild(frag);
 }
 
-function updateHighlight(rows){
+function updateHighlight(rows) {
   const wrap = $('#hiWrap');
   
-  if(!rows.length){
+  if (!rows.length) {
     $('#hiCoin').textContent = '—';
     $('#hiAct').textContent = '— • —';
     $('#hiPrice').textContent = '—';
@@ -440,16 +548,16 @@ function updateHighlight(rows){
 }
 
 // ====== UI ======
-function applyTheme(mode){
+function applyTheme(mode) {
   document.documentElement.className = mode === 'light' ? 'theme-light' : 'theme-dark';
   $('#themeSel').value = mode;
   LS.set('arbi:theme', mode);
 }
 
-function renderChips(){
+function renderChips() {
   const wrap = $('#chips');
   wrap.innerHTML = '';
-  for(const sym of [...watched].sort()){
+  for (const sym of [...watched].sort()) {
     const chip = document.createElement('div');
     chip.className = 'chip';
     chip.innerHTML = `<span>${sym}</span>`;
@@ -460,7 +568,8 @@ function renderChips(){
       delete priceData[sym];
       LS.set('arbi:watched', [...watched]);
       renderChips();
-      reconnectAll();
+      // Debounced reconnect - her silmede hemen bağlanma
+      debouncedReconnect();
     };
     chip.appendChild(btn);
     wrap.appendChild(chip);
@@ -468,43 +577,73 @@ function renderChips(){
   $('#cnt').textContent = watched.size;
 }
 
-function reconnectAll(){
-  connectParibu();
-  connectBinance();
-}
-
 // ====== Events ======
 $('#add').onclick = () => {
-  const sym = norm($('#coinIn').value);
-  if(sym && !watched.has(sym)){
-    watched.add(sym);
+  const val = $('#coinIn').value;
+  const syms = val.split(/[,\s]+/).map(s => norm(s)).filter(s => s);
+  
+  let added = false;
+  for (const sym of syms) {
+    if (sym && !watched.has(sym)) {
+      watched.add(sym);
+      added = true;
+    }
+  }
+  
+  if (added) {
     LS.set('arbi:watched', [...watched]);
     renderChips();
-    reconnectAll();
+    // Debounced reconnect
+    debouncedReconnect();
   }
+  
   $('#coinIn').value = '';
 };
-$('#coinIn').onkeydown = (e) => { if(e.key === 'Enter') $('#add').click(); };
+
+$('#coinIn').onkeydown = (e) => { if (e.key === 'Enter') $('#add').click(); };
+
 $('#clear').onclick = () => {
   watched.clear();
-  for(const k in priceData) delete priceData[k];
+  for (const k in priceData) delete priceData[k];
   LS.set('arbi:watched', []);
   renderChips();
-  reconnectAll();
+  // Bağlantıları kapat
+  if (wsParibu) {
+    wsParibu.onclose = null;
+    wsParibu.close();
+    wsParibu = null;
+  }
+  if (wsBinance) {
+    wsBinance.onclose = null;
+    wsBinance.close();
+    wsBinance = null;
+  }
+  updateStatusUI('paribu', 'disconnected');
+  updateStatusUI('binance', 'disconnected');
   $('#tbody').innerHTML = '';
 };
+
 $('#minPct').oninput = (e) => {
   minPctFilter = Number(e.target.value) || 0;
   LS.set('arbi:minpct', minPctFilter);
   render();
 };
+
 $('#themeSel').onchange = (e) => applyTheme(e.target.value);
+
 $('#speedSel').onchange = (e) => {
   updateSpeed = e.target.value;
   LS.set('arbi:speed', updateSpeed);
-  reconnectAll(); // Yeni hızla yeniden bağlan
+  // Hız değişince reconnect gerekli
+  debouncedReconnect();
 };
-$('#reconnect').onclick = reconnectAll;
+
+$('#reconnect').onclick = () => {
+  // Manuel reconnect - debounce'u bypass et
+  if (connectDebounceTimer) clearTimeout(connectDebounceTimer);
+  if (reconnectDebounceTimer) clearTimeout(reconnectDebounceTimer);
+  reconnectAll();
+};
 
 // Update counter per second
 setInterval(() => {
@@ -517,6 +656,8 @@ applyTheme(themeMode);
 $('#minPct').value = minPctFilter;
 $('#speedSel').value = updateSpeed;
 renderChips();
+
+// İlk bağlantı
 reconnectAll();
 </script>
 </body>
