@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="tr" class="theme-dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Arbitraj Radarı ⚡ Paribu ⇄ Binance</title>
+<style>
+  .theme-dark{
+    --bg:#0b1220; --panel:#111a2b; --panel2:#0f1626; --text:#e6edf6;
+    --muted:#9fb0ca; --accent:#60a5fa; --border:#17243e;
+    --headerStart:#0e172a; --headerEnd:#0b1220;
+    --chipBg:#1a243e; --chipBorder:#2a3d64;
+  }
+  .theme-light{
+    --bg:#ffffff; --panel:#f3f6fb; --panel2:#ffffff; --text:#0b1220;
+    --muted:#4a5568; --accent:#2563eb; --border:#d7deea;
+    --headerStart:#eaf1ff; --headerEnd:#ffffff;
+    --chipBg:#eef3ff; --chipBorder:#c8d6f5;
+  }
+
+  :root{
+    --table-font:18px; --cell-pad-y:12px; --cell-pad-x:10px; --row-gap:6px;
+    --cell-radius:12px; --container-max:1100px;
+    --col-coin:28%; --col-al:27%; --col-sat:27%; --col-pct:18%;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(180deg,var(--headerStart),var(--headerEnd));border-bottom:1px solid var(--border)}
+  header h1{margin:0;font-size:20px}
+  header .sub{color:var(--muted);font-size:12px}
+  header .rightBox{display:flex;gap:14px;align-items:center}
+  .btn{background:var(--accent);color:#091220;border:none;border-radius:10px;padding:10px 12px;font-weight:600;cursor:pointer}
+  .ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
+
+  .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;padding:12px 16px;background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .ctrl{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px}
+  .ctrl label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  .row{display:flex;gap:8px;align-items:center}
+  input[type="text"], input[type="number"], select{
+    width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:10px 12px;font-size:14px;outline:none
+  }
+  input[type="range"]{width:100%}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{display:inline-flex;gap:6px;align-items:center;background:var(--chipBg);border:1px solid var(--chipBorder);border-radius:999px;padding:5px 10px;font-size:12px}
+  .chip button{all:unset;cursor:pointer;color:#4f79ff}
+
+  .tableWrap{padding:12px 16px;max-width:var(--container-max);margin:0 auto}
+  table{width:100%;border-collapse:separate;border-spacing:0 var(--row-gap);table-layout:fixed}
+  thead th{font-size:calc(var(--table-font) - 4px);color:var(--muted);text-align:center;padding:0 8px}
+  thead th:first-child{text-align:left}
+  tbody tr{background:var(--panel2);border:1px solid var(--border)}
+  tbody td{padding:var(--cell-pad-y) var(--cell-pad-x);font-size:var(--table-font)}
+  tbody tr td:first-child{border-top-left-radius:var(--cell-radius);border-bottom-left-radius:var(--cell-radius)}
+  tbody tr td:last-child{border-top-right-radius:var(--cell-radius);border-bottom-right-radius:var(--cell-radius)}
+  .mono{font-variant-numeric:tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace}
+  .muted{color:var(--muted)}
+  .coinCell{display:flex;align-items:center;gap:10px}
+  .coinSym{font-weight:800}
+  .alCell,.satCell,.pctCell{text-align:center;font-weight:800}
+
+  .statusBadge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#ef4444;color:white}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Arbitraj Radarı ⚡ Paribu ⇄ Binance <span class="statusBadge">ULTRA HIZLI</span></h1>
+    <div class="sub">
+      USDT→TRY: <span id="usdtry" class="mono">—</span>
+      · BTCUSDT: <span id="btc" class="mono">—</span>
+    </div>
+  </div>
+  <div class="rightBox">
+    <button id="toggleTheme" class="btn ghost">Tema Değiştir</button>
+  </div>
+</header>
+
+<section class="controls">
+  <div class="ctrl">
+    <label>Coin Ekle / Çıkar</label>
+    <div class="row">
+      <input id="coinIn" type="text" placeholder="BTC, ETH, XRP"/>
+      <button id="add" class="btn">Ekle</button>
+      <button id="clear" class="btn ghost">Temizle</button>
+    </div>
+    <div id="chips" class="chips"></div>
+  </div>
+
+  <div class="ctrl">
+    <label>Yenileme (0.05–4.0 sn)</label>
+    <div class="row">
+      <input id="rng" type="range" min="50" max="4000" step="50">
+      <div class="mono" id="rngLbl">—</div>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">BATCH API ⚡</div>
+  </div>
+
+  <div class="ctrl">
+    <label>Timeout (0.1–3.0 sn)</label>
+    <div class="row">
+      <input id="timeoutRng" type="range" min="100" max="3000" step="100">
+      <div class="mono" id="timeoutLbl">—</div>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">Yavaş coinler için</div>
+  </div>
+
+  <div class="ctrl">
+    <label>Min. % Fark</label>
+    <div class="row">
+      <input id="minPct" type="number" step="0.01" min="0" value="0.00"/>
+    </div>
+  </div>
+</section>
+
+<section class="controls" style="grid-template-columns: 1fr 1fr;">
+  <div class="ctrl">
+    <label>Tema</label>
+    <div class="row">
+      <select id="themeSel">
+        <option value="dark">Koyu</option>
+        <option value="light">Açık</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="ctrl">
+    <label>İstatistikler</label>
+    <div class="muted" style="font-size:12px;line-height:1.6">
+      İzlenen: <span id="cnt">0</span> · Hata: <span id="err">0</span><br>
+      Son: <span id="last" class="mono">—</span> · İstek: <span id="reqTime" class="mono">—</span>
+    </div>
+  </div>
+</section>
+
+<section class="tableWrap">
+  <table>
+    <colgroup>
+      <col style="width:var(--col-coin);">
+      <col style="width:var(--col-al);">
+      <col style="width:var(--col-sat);">
+      <col style="width:var(--col-pct);">
+    </colgroup>
+    <thead>
+      <tr>
+        <th style="text-align:left">Coin</th>
+        <th>AL</th>
+        <th>SAT</th>
+        <th>% Fark</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</section>
+
+<script>
+// CORS KONTROLÜ
+if (window.location.protocol === 'file:') {
+  document.body.innerHTML = '<div style="font-family:system-ui;padding:40px;background:#0b1220;color:#e6edf6;text-align:center"><h1 style="color:#ef4444;font-size:48px">🔴 HATA!</h1><h2 style="color:#f59e0b">YANLIŞ AÇILIŞ!</h2><div style="background:#1a243e;border:2px solid #ef4444;border-radius:20px;padding:30px;margin:30px auto;max-width:700px"><h3 style="color:#ef4444">❌ index.html\'e çift tıkladın!</h3><p style="color:#9fb0ca">Bu CORS hatası verir!</p><hr style="border-color:#374151;margin:20px 0"><h3 style="color:#10b981">✅ DOĞRU KULLANIM:</h3><ol style="color:#9fb0ca;text-align:left"><li>basla.bat dosyasına çift tıkla</li><li>Tarayıcıda aç: <code style="background:#10b981;color:#000;padding:5px 10px;border-radius:4px;font-weight:bold">http://localhost:3000</code></li></ol></div></div>';
+  throw new Error('CORS hatası: http://localhost:3000 kullan!');
+}
+
+const $ = s => document.querySelector(s);
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
+};
+
+function norm(s){
+  if(!s) return '';
+  return s.trim().toUpperCase().replaceAll('İ','I').replaceAll('Ç','C').replaceAll('Ğ','G').replaceAll('Ö','O').replaceAll('Ş','S').replaceAll('Ü','U');
+}
+
+function fmtPctTR(n, d=2){
+  if(n==null || !isFinite(n)) return '—';
+  return '%'+Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d, maximumFractionDigits:d});
+}
+
+function fmt4(n){ return (n==null||!isFinite(n)) ? '—' : Number(n).toFixed(4); }
+function nowStr(){ return new Date().toLocaleTimeString('tr-TR'); }
+
+let watched = new Set(LS.get('arbi:watched', []));
+let refreshMs = Number(LS.get('arbi:interval', 200));
+let minPctFilter = Number(LS.get('arbi:minpct', 0.00));
+let themeMode = LS.get('arbi:theme', 'dark');
+let fetchTimeout = Number(LS.get('arbi:timeout', 1000));
+
+let timer = null, updating = false, errors = 0, usdtry = null;
+let lastUsdtUpdate = 0;
+const USDT_CACHE_MS = 5000;
+
+const coinCache = new Map();
+const COIN_CACHE_TTL = 10000;
+
+const elUsd = $('#usdtry'), elLast = $('#last'), elCnt = $('#cnt'), elErr = $('#err'),
+      elReqTime = $('#reqTime'), elBody = $('#tbody'), elRng = $('#rng'), 
+      elRngLbl = $('#rngLbl'), elMin = $('#minPct'), elThemeSel = $('#themeSel'), 
+      elBtc = $('#btc'), elTimeoutRng = $('#timeoutRng'), elTimeoutLbl = $('#timeoutLbl');
+
+const PROXY_URL = 'http://localhost:3000';
+
+async function jget(url){
+  const res = await fetch(url, {cache:'no-store'});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return res.json();
+}
+
+async function pLimit(promises, limit = 15) {
+  const results = [];
+  const executing = [];
+  
+  for (const promise of promises) {
+    const p = Promise.resolve(promise()).then(result => {
+      executing.splice(executing.indexOf(p), 1);
+      return result;
+    });
+    
+    results.push(p);
+    executing.push(p);
+    
+    if (executing.length >= limit) {
+      await Promise.race(executing);
+    }
+  }
+  
+  return Promise.allSettled(results);
+}
+
+async function paribuBatch(symbols){
+  const markets = symbols.map(s => s.toLowerCase() + '_tl');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), fetchTimeout);
+  
+  try {
+    const res = await fetch(`${PROXY_URL}/api/paribu/batch`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ markets }),
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return res.json();
+  } catch(e) {
+    clearTimeout(timeoutId);
+    throw e;
+  }
+}
+
+function parseParibu(data){
+  if(!data || !data.bids || !data.asks) return {bid:NaN, ask:NaN};
+  const bids = data.bids.map(x => parseFloat(x[0])).filter(x=>isFinite(x));
+  const asks = data.asks.map(x => parseFloat(x[0])).filter(x=>isFinite(x));
+  if(!bids.length || !asks.length) return {bid:NaN, ask:NaN};
+  return { bid: Math.max(...bids), ask: Math.min(...asks) };
+}
+
+async function tick(){
+  if(updating) return;
+  updating = true;
+  const tickStart = performance.now();
+  
+  try{
+    jget('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(btc => {
+      const p = parseFloat(btc.price);
+      if(isFinite(p)) elBtc.textContent = '$' + p.toFixed(2);
+    }).catch(()=>{});
+
+    if(watched.size===0){
+      elBody.innerHTML = '';
+      elLast.textContent = nowStr();
+      updating = false;
+      return;
+    }
+
+    const timeNow = Date.now();
+    if(!usdtry || (timeNow - lastUsdtUpdate) > USDT_CACHE_MS){
+      try{
+        const usdt = await jget(`${PROXY_URL}/api/paribu/orderbook?market=usdt_tl`);
+        const best = parseParibu(usdt);
+        if(isFinite(best.bid)){
+          usdtry = best.bid;
+          lastUsdtUpdate = timeNow;
+        }
+      }catch(e){}
+    }
+    elUsd.textContent = usdtry ? usdtry.toFixed(4) : '—';
+
+    const syms = Array.from(watched);
+    
+    let paribuMap = new Map();
+    try {
+      const batchData = await paribuBatch(syms);
+      if(batchData.results){
+        batchData.results.forEach(r => {
+          if(r.success && r.data){
+            const sym = r.market.replace('_tl', '').toUpperCase();
+            paribuMap.set(sym, parseParibu(r.data));
+          }
+        });
+      }
+    } catch(e) {
+      console.warn('Batch hata:', e.message);
+    }
+    
+    const binancePromises = syms.map(sym => async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), fetchTimeout);
+      
+      try {
+        const res = await fetch(`https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`, {
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if(!res.ok) throw new Error('HTTP ' + res.status);
+        const bJson = await res.json();
+        
+        return { 
+          status: 'fulfilled',
+          value: { sym, bidPrice: parseFloat(bJson.bidPrice), askPrice: parseFloat(bJson.askPrice) }
+        };
+      } catch(e) {
+        clearTimeout(timeoutId);
+        return { 
+          status: 'rejected',
+          reason: e.message,
+          value: { sym, bidPrice: NaN, askPrice: NaN }
+        };
+      }
+    });
+    
+    const binanceResults = await pLimit(binancePromises, 15);
+    const binanceMap = new Map();
+    binanceResults.forEach(result => {
+      const data = result.status === 'fulfilled' ? result.value.value : result.value;
+      if(data && data.sym) binanceMap.set(data.sym, data);
+    });
+    
+    const jobs = syms.map(sym => {
+      const pBest = paribuMap.get(sym);
+      const bData = binanceMap.get(sym);
+      
+      if(pBest && bData && isFinite(pBest.bid) && isFinite(pBest.ask) && 
+         isFinite(bData.bidPrice) && isFinite(bData.askPrice)) {
+        
+        const mul = (usdtry!=null && isFinite(usdtry)) ? usdtry : 1;
+        const bBidTL = bData.bidPrice * mul;
+        const bAskTL = bData.askPrice * mul;
+
+        const diff1 = pBest.bid - bAskTL;
+        const diff2 = bBidTL - pBest.ask;
+
+        let show=false, low=0, high=0, pct=0, lowSrc='', highSrc='';
+
+        if((diff1>0 || diff2>0) && isFinite(bBidTL) && isFinite(bAskTL)){
+          show = true;
+          if(diff1 > diff2){
+            pct = (diff1 / bAskTL) * 100;
+            low = bAskTL; high = pBest.bid; lowSrc='Binance'; highSrc='Paribu';
+          }else{
+            pct = (diff2 / pBest.ask) * 100;
+            low = pBest.ask; high = bBidTL; lowSrc='Paribu'; highSrc='Binance';
+          }
+        }
+        
+        const result = {sym, show, low, high, pct, lowSrc, highSrc};
+        
+        if(show && isFinite(pct)) {
+          coinCache.set(sym, { data: result, timestamp: timeNow });
+        }
+        
+        return result;
+      }
+      
+      const cached = coinCache.get(sym);
+      if(cached && (timeNow - cached.timestamp) < COIN_CACHE_TTL) {
+        return cached.data;
+      }
+      
+      return null;
+    });
+
+    let rows = jobs.filter(r => r && r.show && isFinite(r.pct) && r.pct >= (Number(minPctFilter)||0));
+    rows.sort((a,b)=> b.pct - a.pct);
+    draw(rows);
+    
+    elLast.textContent = nowStr();
+    elErr.textContent = errors;
+    
+    const tickDuration = (performance.now() - tickStart).toFixed(0);
+    elReqTime.textContent = tickDuration + 'ms';
+    
+  }catch(e){
+    console.error('Tick hata:', e);
+    errors++;
+    elErr.textContent = errors;
+  }finally{
+    updating = false;
+  }
+}
+
+function draw(rows){
+  const frag = document.createDocumentFragment();
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+
+    const tdCoin = document.createElement('td');
+    tdCoin.className = 'coinCell';
+    const sym = document.createElement('span'); 
+    sym.className='coinSym'; 
+    sym.textContent = r.sym;
+    tdCoin.appendChild(sym);
+    tr.appendChild(tdCoin);
+
+    const tdL = document.createElement('td'); 
+    tdL.className='mono alCell';
+    tdL.textContent = fmt4(r.low);
+    tdL.style.background = (r.lowSrc==='Binance') ? 'orange' : 'green';
+    tr.appendChild(tdL);
+
+    const tdH = document.createElement('td'); 
+    tdH.className='mono satCell';
+    tdH.textContent = fmt4(r.high);
+    tdH.style.background = (r.highSrc==='Paribu') ? 'green' : 'orange';
+    tr.appendChild(tdH);
+
+    const tdP = document.createElement('td'); 
+    tdP.className='mono pctCell';
+    tdP.textContent = fmtPctTR(r.pct, 2);
+    tr.appendChild(tdP);
+
+    frag.appendChild(tr);
+  });
+  elBody.innerHTML = '';
+  elBody.appendChild(frag);
+}
+
+function applyTheme(mode){
+  const html = document.documentElement;
+  html.classList.remove('theme-dark','theme-light');
+  html.classList.add(mode==='light' ? 'theme-light' : 'theme-dark');
+  elThemeSel.value = mode;
+  LS.set('arbi:theme', mode);
+  themeMode = mode;
+}
+
+function renderChips(){
+  const wrap = $('#chips'); wrap.innerHTML='';
+  Array.from(watched).sort().forEach(sym=>{
+    const d = document.createElement('div'); d.className='chip';
+    d.innerHTML = `<span>${sym}</span>`;
+    const b = document.createElement('button'); b.textContent='×';
+    b.onclick = ()=>{
+      watched.delete(sym);
+      coinCache.delete(sym);
+      LS.set('arbi:watched', Array.from(watched));
+      elCnt.textContent = watched.size; renderChips();
+    };
+    d.appendChild(b); wrap.appendChild(d);
+  });
+  elCnt.textContent = watched.size;
+}
+
+function schedule(ms){
+  refreshMs = Math.max(50, Math.min(4000, ms|0));
+  elRng.value = refreshMs;
+  elRngLbl.textContent = (refreshMs/1000).toFixed(2)+' sn';
+  LS.set('arbi:interval', refreshMs);
+  if(timer) clearInterval(timer);
+  timer = setInterval(tick, refreshMs);
+}
+
+function updateTimeout(ms){
+  fetchTimeout = Math.max(100, Math.min(3000, ms|0));
+  elTimeoutRng.value = fetchTimeout;
+  elTimeoutLbl.textContent = (fetchTimeout/1000).toFixed(1)+' sn';
+  LS.set('arbi:timeout', fetchTimeout);
+}
+
+$('#add').onclick = ()=>{
+  const raw = $('#coinIn').value;
+  const syms = raw.split(/[,\s]+/).map(s => norm(s)).filter(Boolean);
+  syms.forEach(sym => watched.add(sym));
+  LS.set('arbi:watched', Array.from(watched));
+  renderChips();
+  $('#coinIn').value='';
+};
+$('#coinIn').addEventListener('keydown',(e)=>{ if(e.key==='Enter') $('#add').click(); });
+
+$('#clear').onclick = ()=>{
+  watched.clear();
+  coinCache.clear();
+  LS.set('arbi:watched', []);
+  renderChips(); elBody.innerHTML='';
+};
+
+elRng.addEventListener('input', e=> schedule(Number(e.target.value)));
+elTimeoutRng.addEventListener('input', e=> updateTimeout(Number(e.target.value)));
+elMin.addEventListener('input', e=>{
+  minPctFilter = Number(e.target.value)||0;
+  LS.set('arbi:minpct', minPctFilter);
+});
+elThemeSel.addEventListener('change', (e)=> applyTheme(e.target.value));
+$('#toggleTheme').onclick = ()=> applyTheme(themeMode==='dark' ? 'light' : 'dark');
+
+(function init(){
+  applyTheme(themeMode);
+  renderChips();
+  elMin.value = minPctFilter;
+  schedule(refreshMs || 200);
+  updateTimeout(fetchTimeout || 1000);
+  elLast.textContent = nowStr();
+})();
+
+setInterval(()=>{ if(watched.size===0) elLast.textContent = nowStr(); }, 1000);
+
+console.log('⚡ ULTRA HIZLI MOD - Batch API aktif!');
+</script>
+</body>
+</html>
