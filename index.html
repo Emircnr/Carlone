@@ -344,10 +344,10 @@ function paribuUrl(sym){ return `https://web.paribu.com/market/${sym.toLowerCase
 function binanceBook(sym){ return `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}USDT`; }
 const BINANCE_BTC_PRICE = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
 
-/* CORS Hatanı Çözen Güncellenmiş jget Fonksiyonu */
+/* YENİ VE DAHA STABİL PROXY FONKSİYONU */
 async function jget(url){
-  // İstekleri CORS engelini aşmak için proxy üzerinden geçiriyoruz
-  const proxyUrl = url.includes('paribu') ? `https://corsproxy.io/?${encodeURIComponent(url)}` : url;
+  // Antivirüs/Ağ engellerine takılmayan AllOrigins Proxy servisini kullanıyoruz
+  const proxyUrl = url.includes('paribu') ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` : url;
   const res = await fetch(proxyUrl, {cache:'no-store'});
   if(!res.ok) throw new Error('HTTP '+res.status);
   return res.json();
